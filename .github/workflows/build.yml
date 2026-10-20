@@ -24,4 +24,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Sweepdeck-local-build
-          path: dist/Sweepdeck.app
+          path: dist/Sweepdeck-macOS.zip
+          if-no-files-found: error
