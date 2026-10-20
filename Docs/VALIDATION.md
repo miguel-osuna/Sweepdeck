@@ -23,6 +23,11 @@ Command Line Tools but no active full Xcode installation. GitHub Actions run
   candidate count. Disk Explorer tests cover root/folder aggregation, nested files,
   extension/size/age filters, authorized-root boundaries, and batched progress off
   the main thread over 3,000 entries.
+- A coverage-instrumented test run measured 559 of 657 executable `SweepdeckCore`
+  source lines covered (85.1%), 133 of 160 functions (83.1%), and 337 of 432 code
+  regions (78.0%). `DiskExplorerMatcher.swift` has 97.1% line coverage. The SwiftUI
+  app target is not included in the SwiftPM test coverage report. CI now enforces an
+  80% `SweepdeckCore` executable-line floor on both macOS toolchains.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.

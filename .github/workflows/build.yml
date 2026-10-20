@@ -7,6 +7,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v7
+      - name: Test coverage gate
+        run: python3 scripts/test-core-coverage.py
       - name: Select installed Swift 6.2 Xcode
         shell: bash
         run: |
@@ -19,7 +21,12 @@ jobs:
           done
           echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
           exit 1
-      - run: bash scripts/swift.sh test
+      - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Enforce SweepdeckCore line coverage floor
+        run: |
+          coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
+          test -n "$coverage_json"
+          python3 scripts/check_core_coverage.py "$coverage_json" 80
       - run: bash scripts/build-app.sh
       - uses: actions/upload-artifact@v7
         with:
@@ -32,6 +39,8 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
+      - name: Test coverage gate
+        run: python3 scripts/test-core-coverage.py
       - name: Install Swift 6.4.1 toolchain
         shell: bash
         run: |
@@ -46,5 +55,10 @@ jobs:
           echo "TOOLCHAINS=$toolchain_id" >> "$GITHUB_ENV"
           echo "$toolchain/usr/bin" >> "$GITHUB_PATH"
           "$toolchain/usr/bin/swift" --version
-      - run: bash scripts/swift.sh test
+      - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Enforce SweepdeckCore line coverage floor
+        run: |
+          coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
+          test -n "$coverage_json"
+          python3 scripts/check_core_coverage.py "$coverage_json" 80
       - run: bash scripts/build-app.sh
