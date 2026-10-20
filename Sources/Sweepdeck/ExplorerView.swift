@@ -8,8 +8,13 @@ struct ExplorerView: View {
     @State private var minimumMB = 0
     @State private var onlyOld = false
     @State private var entries: [DiskExplorerEntry] = []
+    @State private var pageIndex = 0
     @State private var matchingProgress: ExplorerMatchProgress?
     @State private var matchedSearchKey: ExplorerSearchKey?
+
+    private var page: ResultPage {
+        ResultPage(pageIndex: pageIndex, pageSize: 100, itemCount: entries.count)
+    }
 
     private var searchKey: ExplorerSearchKey {
         ExplorerSearchKey(
@@ -59,23 +64,25 @@ struct ExplorerView: View {
                 ContentUnavailableView("No files match these filters", systemImage: "line.3.horizontal.decrease.circle",
                     description: Text("Try a different extension, size threshold, or age filter.")).frame(maxHeight: .infinity)
             } else {
-                List(entries) { entry in
-                    HStack(spacing: 14) {
-                        Image(systemName: entry.directory ? "folder.fill" : "doc").foregroundStyle(.teal)
-                        VStack(alignment: .leading, spacing: 4) {
-                            if entry.directory { Button(entry.url.lastPathComponent) { location = entry.url }.buttonStyle(.plain).fontWeight(.medium) }
-                            else { Text(entry.url.lastPathComponent).fontWeight(.medium) }
-                            Text(entry.directory ? "\(entry.count) eligible files" : entry.url.pathExtension.uppercased()).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Text(bytes(entry.size)).monospacedDigit()
-                        Button("Reveal") { model.reveal(entry.url) }.buttonStyle(.borderless)
-                        if let candidate = model.candidateIndex.candidate(atPath: entry.id) {
-                            Button(model.selection.ids.contains(candidate.id) ? "Deselect" : "Select for review") { model.selection.toggle(candidate) }
-                                .disabled(model.isBusy)
-                        }
-                        if entry.directory { Image(systemName: "chevron.right").foregroundStyle(.tertiary) }
-                    }.padding(.vertical, 7)
+                List {
+                    ForEach(entries[page.range]) { entry in
+                        HStack(spacing: 14) {
+                            Image(systemName: entry.directory ? "folder.fill" : "doc").foregroundStyle(.teal)
+                            VStack(alignment: .leading, spacing: 4) {
+                                if entry.directory { Button(entry.url.lastPathComponent) { location = entry.url }.buttonStyle(.plain).fontWeight(.medium) }
+                                else { Text(entry.url.lastPathComponent).fontWeight(.medium) }
+                                Text(entry.directory ? "\(entry.count) eligible files" : entry.url.pathExtension.uppercased()).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(bytes(entry.size)).monospacedDigit()
+                            Button("Reveal") { model.reveal(entry.url) }.buttonStyle(.borderless)
+                            if let candidate = model.candidateIndex.candidate(atPath: entry.id) {
+                                Button(model.selection.ids.contains(candidate.id) ? "Deselect" : "Select for review") { model.selection.toggle(candidate) }
+                                    .disabled(model.isBusy)
+                            }
+                            if entry.directory { Image(systemName: "chevron.right").foregroundStyle(.tertiary) }
+                        }.padding(.vertical, 7)
+                    }
                 }.listStyle(.inset)
             }
             HStack {
@@ -83,17 +90,20 @@ struct ExplorerView: View {
                 Spacer()
                 Button("Review selected files (\(model.selected.count))") { model.section = .cleanup; model.category = nil }
             }
+            ResultPageFooter(page: page, itemLabel: "results") { pageIndex = $0 }
         }.padding(28)
         .onChange(of: model.report?.started) { location = nil }
         .task(id: searchKey) {
             let key = searchKey
             guard let report = model.report else {
                 entries = []
+                pageIndex = 0
                 matchingProgress = nil
                 matchedSearchKey = key
                 return
             }
 
+            pageIndex = 0
             matchedSearchKey = nil
             matchingProgress = nil
             let roots = model.preferences.roots

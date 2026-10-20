@@ -3,6 +3,17 @@ import SweepdeckCore
 
 struct PreferencesView: View {
     @ObservedObject var model: AppModel
+    @State private var rootsPageIndex = 0
+    @State private var exclusionsPageIndex = 0
+
+    private var rootsPage: ResultPage {
+        ResultPage(pageIndex: rootsPageIndex, pageSize: 100, itemCount: model.preferences.roots.count)
+    }
+
+    private var exclusionsPage: ResultPage {
+        ResultPage(pageIndex: exclusionsPageIndex, pageSize: 100, itemCount: model.preferences.excludedPaths.count)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -10,13 +21,14 @@ struct PreferencesView: View {
                 GroupBox("Authorized scan folders") {
                     VStack(alignment: .leading, spacing: 12) {
                         if model.preferences.roots.isEmpty { Text("No folders authorized yet.").foregroundStyle(.secondary) }
-                        ForEach(model.preferences.roots) { root in
+                        ForEach(model.preferences.roots[rootsPage.range]) { root in
                             HStack {
                                 Label(root.url.path, systemImage: "folder").textSelection(.enabled)
                                 Spacer()
                                 Button("Remove") { model.preferences.roots.removeAll { $0.id == root.id } }
                             }
                         }
+                        ResultPageFooter(page: rootsPage, itemLabel: "folders") { rootsPageIndex = $0 }
                         Button("Add Folder…") { model.chooseFolder() }
                         Text("Only internal, local folders are supported in this release. Repositories, Library data and system paths remain protected.").font(.caption).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
@@ -36,13 +48,14 @@ struct PreferencesView: View {
                 GroupBox("Excluded files and folders") {
                     VStack(alignment: .leading, spacing: 12) {
                         if model.preferences.excludedPaths.isEmpty { Text("No custom exclusions.").foregroundStyle(.secondary) }
-                        ForEach(model.preferences.excludedPaths, id: \.self) { path in
+                        ForEach(model.preferences.excludedPaths[exclusionsPage.range], id: \.self) { path in
                             HStack {
                                 Text(path).textSelection(.enabled)
                                 Spacer()
                                 Button("Remove") { model.preferences.excludedPaths.removeAll { $0 == path } }
                             }
                         }
+                        ResultPageFooter(page: exclusionsPage, itemLabel: "exclusions") { exclusionsPageIndex = $0 }
                         Button("Add Exclusion…") { model.chooseFolder(exclusion: true) }
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
                 }.disabled(model.isBusy)
