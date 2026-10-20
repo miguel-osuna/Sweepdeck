@@ -8,7 +8,7 @@ the tests and release build with Swift 6.2 on `macos-15` and Swift 6.4.1 on
 
 ## Automated checks
 
-- `bash scripts/swift.sh test` passed: 33 Swift Testing tests in two suites. Coverage
+- `bash scripts/swift.sh test` passed locally: 37 Swift Testing tests in three suites. Coverage
   includes scanning, cancellation and result limits; path/symlink/repository and
   metadata safety; overlapping-root deduplication; cleanup preview, stale-item
   refusal, fake Trash and partial results; full preference/history round-trip
@@ -20,7 +20,9 @@ the tests and release build with Swift 6.2 on `macos-15` and Swift 6.4.1 on
   cancellation and batched/final counts. Six CandidateMatcher tests cover
   case-insensitive path/category filtering, all sort modes and tie ordering, and
   verify that progress callbacks run off the main thread and reach the final
-  candidate count.
+  candidate count. Disk Explorer tests cover root/folder aggregation, nested files,
+  extension/size/age filters, authorized-root boundaries, and batched progress off
+  the main thread over 3,000 entries.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
@@ -52,8 +54,10 @@ under `/private/tmp/SweepdeckUIFixture`.
   100 candidates; loading the next page returned in 3.7 seconds. Selecting and
   clearing all 3,000 candidates each returned in about 1.2 seconds.
 - Dashboard, Smart Cleanup, Disk Explorer, System Health and Operation Results
-  were visually inspected. Cleanup also exercised search, category filtering,
-  sorting, details, group selection, paging and dry-run preview.
+  were visually inspected before the latest asynchronous Explorer update. Cleanup
+  also exercised search, category filtering, sorting, details, group selection,
+  paging and dry-run preview. The updated Explorer progress and no-match states
+  still need a fresh visual check.
 - The later async CandidateMatcher change was not visually rechecked. Its search,
   category and sort behavior is covered by the new core tests, including a check
   that progress callbacks run off the main thread; this is executor-isolation
@@ -108,6 +112,11 @@ the end-to-end test, and Trash was not emptied.
   A Swift sort already
   in progress cannot be interrupted, but its result is discarded if the search
   task was cancelled; the bounded 25,000-record scan cap limits that work.
+- Disk Explorer aggregation previously filtered, grouped and sorted the full scan
+  synchronously while SwiftUI evaluated the view. It now runs in nonisolated async
+  core work, checks cancellation, and shows progress while hiding results for old
+  filters. Tests verify aggregation and executor isolation, not end-to-end UI
+  latency; the changed states still need a visual check.
 - A separate debug SwiftPM scan fixture with 3,000 old `.dmg` files in one
   directory took 5.38 seconds before and 1.30 seconds after caching validated
   directory ancestry (about 4.1× faster). Fixture creation was outside the timed
