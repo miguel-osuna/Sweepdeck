@@ -7,7 +7,9 @@ let package = Package(
     products: [.executable(name: "Sweepdeck", targets: ["Sweepdeck"])],
     targets: [
         .target(name: "SweepdeckCore"),
-        .executableTarget(name: "Sweepdeck", dependencies: ["SweepdeckCore"]),
-        .testTarget(name: "SweepdeckCoreTests", dependencies: ["SweepdeckCore"])
+        .target(name: "SweepdeckAppearance", dependencies: ["SweepdeckCore"]),
+        .executableTarget(name: "Sweepdeck", dependencies: ["SweepdeckCore", "SweepdeckAppearance"]),
+        .testTarget(name: "SweepdeckCoreTests", dependencies: ["SweepdeckCore"]),
+        .testTarget(name: "SweepdeckAppearanceTests", dependencies: ["SweepdeckAppearance", "SweepdeckCore"])
     ]
 )
