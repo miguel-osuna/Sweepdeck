@@ -14,6 +14,24 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Report release-tooling audit findings
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_file="$RUNNER_TEMP/sweepdeck-npm-audit.json"
+          npm audit --json > "$audit_file" || true
+          AUDIT_JSON="$audit_file" node - <<'NODE'
+          const fs = require("node:fs");
+          const report = JSON.parse(fs.readFileSync(process.env.AUDIT_JSON, "utf8"));
+          if (!report.metadata?.vulnerabilities) throw new Error("npm audit returned no vulnerability metadata");
+          console.log("npm audit severity counts:", JSON.stringify(report.metadata.vulnerabilities));
+          for (const [name, finding] of Object.entries(report.vulnerabilities ?? {})) {
+            const advisories = (finding.via ?? [])
+              .filter((item) => typeof item === "object")
+              .map((item) => `${item.source ?? "unknown"} ${item.title ?? ""}`.trim());
+            console.log(`${finding.severity} ${name} ${finding.range}; direct=${finding.isDirect}; fix=${JSON.stringify(finding.fixAvailable)}; ${advisories.join("; ")}`);
+          }
+          NODE
       - run: npm run test:release-tools
 
   macos:
