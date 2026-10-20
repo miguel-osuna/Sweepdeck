@@ -8,11 +8,14 @@ Releases are calculated from Conventional Commit messages and are created only f
 - `feat!: change the saved-state format` requests a major release.
 
 The release workflow is manual. Its `publish` input defaults to false, the repository
-must have `RELEASE_READY=true`, all supported macOS/Swift CI lanes must pass, and the
-`release` GitHub Environment should require a reviewer. The workflow first creates a
-versioned candidate build and keeps it as a seven-day Actions artifact. The publish job
-waits for the environment review before creating the tag and GitHub Release. If there
-is no release-worthy commit, it exits without publishing.
+must have `RELEASE_READY=true`, and all supported macOS/Swift CI lanes must pass.
+The `release` GitHub Environment must have at least one required reviewer. Before it
+runs CI or builds a candidate, the gate checks that reviewer protection exists and
+fails closed if it does not. Configure the environment under repository Settings >
+Environments. The workflow then builds a versioned candidate for manual QA and keeps
+it as a seven-day Actions artifact. The publish job waits for environment approval
+before creating the tag and GitHub Release. If there is no release-worthy commit, it
+exits without publishing.
 
 The first publish run creates the `v0.0.0` analysis baseline at the repository's single
 root commit. The workflow refuses to publish if semantic-release does not propose
