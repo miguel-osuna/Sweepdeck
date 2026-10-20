@@ -17,7 +17,11 @@ jobs:
   gate:
     if: inputs.publish == true
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require main and explicit readiness
         env:
           RELEASE_READY: ${{ vars.RELEASE_READY }}
@@ -31,6 +35,12 @@ jobs:
             echo "Set the RELEASE_READY repository variable only after release checks are complete." >&2
             exit 1
           }
+      - name: Require a reviewer-protected release environment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/check-release-environment.sh
 
   verify:
     needs: gate
