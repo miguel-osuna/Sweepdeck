@@ -113,13 +113,14 @@ under `/private/tmp/SweepdeckUIFixture`.
   of Settings controls and flows remain outstanding.
 - A user-supplied System Light screenshot with no app modal showed the Settings
   detail pane dark while its sidebar remained light. The user identified the
-  trigger as switching the in-app setting from Dark to System; whether the mix
-  persists after settling remains unconfirmed. The app now applies explicit Light
-  and Dark choices through AppKit and restores System inheritance by clearing the
-  app appearance override. A core test covers the setting mapping and persisted
-  string compatibility, but it does not render the window. The UI bridge returned
-  `Sky Computer Use native pipe closed before response` when selecting the running
-  app, so a fresh screenshot and UI-level transition regression remain outstanding.
+  trigger as switching the in-app setting from Dark to System. The root SwiftUI
+  view now maps the observed setting to `preferredColorScheme`, so System clears
+  the window-level override instead of changing only `NSApp.appearance`. The
+  existing 42-test suite and release bundle pass after this change, but those
+  checks do not render the window. The UI bridge returned
+  `Sky Computer Use native pipe closed before response` when selecting the
+  running app, so a fresh screenshot and UI-level Dark-to-System regression
+  check remain outstanding.
 
 The UI checks were manual, fixture-based checks rather than XCTest UI tests. The
 read-only Downloads scan is the only personal-folder scan recorded here; it did

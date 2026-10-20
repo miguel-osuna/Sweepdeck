@@ -3,6 +3,15 @@ import SweepdeckCore
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
+
+    private var selectedColorScheme: ColorScheme? {
+        switch model.preferences.appearanceMode {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 20) {
@@ -78,6 +87,7 @@ struct ContentView: View {
         .alert("Sweepdeck", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK", role: .cancel) { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
+        .preferredColorScheme(selectedColorScheme)
     }
 }
 

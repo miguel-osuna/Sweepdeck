@@ -18,10 +18,6 @@ struct SweepdeckApp: App {
             ContentView(model: model)
                 .onAppear {
                     delegate.model = model
-                    applyAppearance(model.preferences.appearanceMode)
-                }
-                .onChange(of: model.preferences.appearance) { _, value in
-                    applyAppearance(AppearanceMode(rawValue: value) ?? .system)
                 }
                 .frame(minWidth: 940, minHeight: 650)
                 .tint(.teal)
@@ -33,18 +29,6 @@ struct SweepdeckApp: App {
                 Button("Scan Authorized Folders") { model.scan() }.keyboardShortcut("r").disabled(model.isBusy || model.preferences.roots.isEmpty)
             }
         }
-    }
-}
-
-@MainActor
-private func applyAppearance(_ mode: AppearanceMode) {
-    switch mode {
-    case .system:
-        NSApp.appearance = nil
-    case .light:
-        NSApp.appearance = NSAppearance(named: .aqua)
-    case .dark:
-        NSApp.appearance = NSAppearance(named: .darkAqua)
     }
 }
 
