@@ -19,7 +19,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Local. Private. In your control.", systemImage: "lock.shield").font(.caption)
                     Text("No background scans. No automatic cleanup.").font(.caption2).foregroundStyle(.secondary)
-                    Text("Version 0.1.0 · MVP").font(.caption2).foregroundStyle(.tertiary)
+                    Text("Version \(ReleaseMetadata.shortVersion(from: Bundle.main.infoDictionary)) · MVP").font(.caption2).foregroundStyle(.tertiary)
                 }.padding(16)
             }.navigationSplitViewColumnWidth(min: 220, ideal: 235, max: 260)
         } detail: {

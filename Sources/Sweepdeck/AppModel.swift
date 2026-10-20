@@ -213,7 +213,7 @@ final class AppModel: ObservableObject {
             self.isPresentingPanel = false
             guard response == .OK, let url = panel.url else { return }
             let data: [String: String] = [
-                "version": "0.1.0", "system": ProcessInfo.processInfo.operatingSystemVersionString,
+                "version": ReleaseMetadata.shortVersion(from: Bundle.main.infoDictionary), "system": ProcessInfo.processInfo.operatingSystemVersionString,
                 "authorizedFolderCount": String(self.preferences.roots.count), "exclusionCount": String(self.preferences.excludedPaths.count),
                 "lastScanFiles": String(self.report?.progress.visited ?? 0), "lastScanErrors": String(self.report?.progress.errors ?? 0),
                 "historyOperations": String(self.history.count), "privacy": "No filenames, paths, file contents or credentials included."

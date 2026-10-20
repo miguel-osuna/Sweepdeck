@@ -71,7 +71,7 @@ struct PreferencesView: View {
                 }
                 HStack {
                     VStack(alignment: .leading) {
-                        Text("Sweepdeck 0.1.0 (1)").font(.headline)
+                        Text("Sweepdeck \(ReleaseMetadata.shortVersion(from: Bundle.main.infoDictionary)) (\(ReleaseMetadata.buildNumber(from: Bundle.main.infoDictionary)))").font(.headline)
                         Text("Original MIT-licensed code · Apple frameworks · no telemetry").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
