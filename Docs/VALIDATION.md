@@ -1,15 +1,17 @@
 # Validation record
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
-Command Line Tools but no active full Xcode installation. GitHub Actions run
+Command Line Tools but no active full Xcode installation. The latest local run
+passed 42 Swift tests, measured 581/680 executable `SweepdeckCore` lines (85.4%)
+and built and verified the release bundle. GitHub Actions run
 [#70](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39506723318) passed
-41 tests, the 80% `SweepdeckCore` coverage floor and the release build with Swift
+the earlier 41-test suite, the 80% coverage floor and release build with Swift
 6.2 on `macos-15` and Swift 6.4.1 on `macos-26`. Interactive UI behavior was not
 checked on either CI runner.
 
 ## Automated checks
 
-- `bash scripts/swift.sh test --enable-code-coverage` passed locally: 41 Swift Testing tests in four suites. Coverage
+- `bash scripts/swift.sh test --enable-code-coverage` passed locally: 42 Swift Testing tests in four suites. Coverage
   includes scanning, cancellation and result limits; path/symlink/repository and
   metadata safety; overlapping-root deduplication; cleanup preview, stale-item
   refusal, fake Trash and partial results; full preference/history round-trip
@@ -21,13 +23,14 @@ checked on either CI runner.
   cancellation and batched/final counts. Six CandidateMatcher tests cover
   case-insensitive path/category filtering, all sort modes and tie ordering, and
   verify that progress callbacks run off the main thread and reach the final
-  candidate count. Disk Explorer tests cover root/folder aggregation, nested files,
+  candidate count. Appearance tests cover System/Light/Dark mapping and stored
+  value compatibility. Disk Explorer tests cover root/folder aggregation, nested files,
   extension/size/age filters, authorized-root boundaries, and batched progress off
   the main thread over 3,000 entries. Four `ResultPageTests` cover empty and
   partial pages, invalid indexes and dimensions, safe very-large ranges, and
   lossless traversal of 25,000 rows while limiting each page to 100.
-- The current coverage-instrumented run measured 578 of 676 executable
-  `SweepdeckCore` source lines covered (85.5%). `DiskExplorerMatcher.swift` has
+- The current coverage-instrumented run measured 581 of 680 executable
+  `SweepdeckCore` source lines covered (85.4%). `DiskExplorerMatcher.swift` has
   97.1% line coverage. The SwiftUI app target is not included in the SwiftPM test
   coverage report. CI enforces an 80% `SweepdeckCore` executable-line floor on
   both macOS toolchains.
@@ -108,12 +111,15 @@ under `/private/tmp/SweepdeckUIFixture`.
   not prove whether Settings itself works or fails. Its code was reviewed, and
   its preference persistence and bounds are covered by unit tests; visual checks
   of Settings controls and flows remain outstanding.
-- A user-supplied System Light screenshot with no modal showed the Settings
-  detail pane dark while its sidebar remained light. The detail content now fills
-  its column with SwiftUI's semantic background so it follows the selected
-  appearance. The SwiftPM suite and release build compile this change, but there
-  is no UI snapshot test target or working screenshot automation in this setup;
-  the rendered fix still needs a native visual check in System Light and Dark.
+- A user-supplied System Light screenshot with no app modal showed the Settings
+  detail pane dark while its sidebar remained light. The user identified the
+  trigger as switching the in-app setting from Dark to System; whether the mix
+  persists after settling remains unconfirmed. The app now applies explicit Light
+  and Dark choices through AppKit and restores System inheritance by clearing the
+  app appearance override. A core test covers the setting mapping and persisted
+  string compatibility, but it does not render the window. The UI bridge returned
+  `Sky Computer Use native pipe closed before response` when selecting the running
+  app, so a fresh screenshot and UI-level transition regression remain outstanding.
 
 The UI checks were manual, fixture-based checks rather than XCTest UI tests. The
 read-only Downloads scan is the only personal-folder scan recorded here; it did

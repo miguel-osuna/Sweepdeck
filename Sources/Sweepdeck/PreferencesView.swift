@@ -61,8 +61,13 @@ struct PreferencesView: View {
                 }.disabled(model.isBusy)
                 GroupBox("Appearance and safety") {
                     VStack(alignment: .leading, spacing: 14) {
-                        Picker("Appearance", selection: $model.preferences.appearance) {
-                            Text("System").tag("System"); Text("Light").tag("Light"); Text("Dark").tag("Dark")
+                        Picker("Appearance", selection: Binding(
+                            get: { model.preferences.appearanceMode },
+                            set: { model.preferences.appearanceMode = $0 }
+                        )) {
+                            ForEach(AppearanceMode.allCases) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
                         }.pickerStyle(.segmented)
                         Label("Trash only · confirmation always required", systemImage: "lock.shield")
                         Text("Permanent deletion, automatic selection, external-volume scans and background indexing are unavailable by design in this MVP.").font(.caption).foregroundStyle(.secondary)

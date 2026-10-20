@@ -1,16 +1,29 @@
 import SwiftUI
 import AppKit
+import SweepdeckCore
 
 @main
 struct SweepdeckApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @StateObject private var model = AppModel()
+    @StateObject private var model: AppModel
+
+    @MainActor
+    init() {
+        let model = AppModel()
+        _model = StateObject(wrappedValue: model)
+    }
+
     var body: some Scene {
         Window("Sweepdeck", id: "main") {
             ContentView(model: model)
-                .onAppear { delegate.model=model }
+                .onAppear {
+                    delegate.model = model
+                    applyAppearance(model.preferences.appearanceMode)
+                }
+                .onChange(of: model.preferences.appearance) { _, value in
+                    applyAppearance(AppearanceMode(rawValue: value) ?? .system)
+                }
                 .frame(minWidth: 940, minHeight: 650)
-                .preferredColorScheme(model.preferences.appearance == "Dark" ? .dark : model.preferences.appearance == "Light" ? .light : nil)
                 .tint(.teal)
         }
         .defaultSize(width: 1180, height: 800)
@@ -20,6 +33,18 @@ struct SweepdeckApp: App {
                 Button("Scan Authorized Folders") { model.scan() }.keyboardShortcut("r").disabled(model.isBusy || model.preferences.roots.isEmpty)
             }
         }
+    }
+}
+
+@MainActor
+private func applyAppearance(_ mode: AppearanceMode) {
+    switch mode {
+    case .system:
+        NSApp.appearance = nil
+    case .light:
+        NSApp.appearance = NSAppearance(named: .aqua)
+    case .dark:
+        NSApp.appearance = NSAppearance(named: .darkAqua)
     }
 }
 

@@ -39,6 +39,22 @@ import Testing
     #expect(preferences.largeBytes == 1_000_000_000_000)
 }
 
+@Test func appearanceModeKeepsStoredValuesCompatibleAndFallsBackToSystem() {
+    var preferences = Preferences()
+    #expect(preferences.appearanceMode == .system)
+
+    preferences.appearanceMode = .dark
+    #expect(preferences.appearance == "Dark")
+    #expect(preferences.appearanceMode == .dark)
+
+    preferences.appearanceMode = .system
+    #expect(preferences.appearance == "System")
+    #expect(preferences.appearanceMode == .system)
+
+    preferences.appearance = "unexpected"
+    #expect(preferences.appearanceMode == .system)
+}
+
 @Test func failingStoreDoesNotSilentlyDiscard() throws {
     let f = try Fixture(); defer { f.dispose() }
     let file = try f.file("not-a-directory")
