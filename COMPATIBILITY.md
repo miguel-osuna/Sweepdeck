@@ -2,7 +2,7 @@
 
 | Version | Build target | Verification |
 |---|---|---|
-| macOS 15 | Minimum deployment target | Not run locally; CI configured, not yet executed remotely |
+| macOS 15 | Minimum deployment target | Tests and release build passed on the `macos-15` GitHub Actions runner ([run #9](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39475815163)); interactive UI runtime not checked |
 | macOS 26.6.2, arm64 | Local host | Build/test/launch evidence recorded below when verified |
 | macOS 27 | Future compatibility target | Not tested; no claim of verified support |
 | Intel / other versions | Not a product target | Not tested |
@@ -34,4 +34,6 @@ No private API, cached directory-layout-based app uninstalling or SDK 27 depende
 ## Verification record
 
 See Docs/VALIDATION.md for exact commands, results, manual checks and limitations.
-CI configuration is source only until a repository is connected and a run succeeds.
+GitHub Actions run #9 verifies tests and release compilation on the `macos-15`
+runner. It does not verify interactive launch, permissions prompts or visual UI
+behavior on that OS version.

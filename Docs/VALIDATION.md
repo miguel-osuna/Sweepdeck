@@ -1,8 +1,9 @@
 # Validation record
 
-Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The macOS 15 deployment
-target is configured but has not been tested on macOS 15. The local host has
-Command Line Tools but no active full Xcode installation.
+Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
+Command Line Tools but no active full Xcode installation. The macOS 15 deployment
+target passed tests and release compilation on GitHub's `macos-15` runner; its
+interactive UI behavior has not been checked there.
 
 ## Automated checks
 
@@ -22,6 +23,10 @@ Command Line Tools but no active full Xcode installation.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
+- GitHub Actions run [#9](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39475815163)
+  passed the 33-test suite, release app build, and artifact upload on the
+  `macos-15` runner. This verifies automated compatibility at the deployment
+  floor, not interactive UI behavior on macOS 15.
 - Standalone CLI smokes used generated fixtures only, but could not verify Trash
   without the app's folder-picker flow: direct `FileManager.trashItem` returned
   Cocoa error 513 / OSStatus -5000 (`afpAccessDenied`), and `MacTrashService`
