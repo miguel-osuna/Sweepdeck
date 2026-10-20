@@ -29,14 +29,15 @@ app is an Actions artifact for manual QA; it is not attached to the public relea
 Local app builds are ad-hoc signed and are not notarized. Do not advertise the current
 archive as a one-click public installer or create a Homebrew cask until Developer ID
 signing, hardened runtime, notarization, stapling and installation checks are automated
-and verified on both supported architectures.
+and verified on supported macOS releases and Apple Silicon.
 
 ## Dependencies and security
 
 Release tooling is pinned in `package-lock.json` and updated weekly by Dependabot.
-The current dependency tree includes `braces@3.0.3`, which has the unresolved
-[GHSA-vfj7-8cjw-p6xm advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and no
-published patched version. It is a dev-only release-tool dependency, is not included in
-the app, and the release workflow runs manually on `main` with a fixed branch pattern.
-That limits its exposure; it does not clear the advisory. Reassess when upstream ships
-a fix or semantic-release removes the affected dependency.
+The CI audit currently reports eight affected package entries, all tracing to the same
+unpatched `braces@3.0.3` issue: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+It is a dev-only release-tool dependency and is not included in the app. npm's suggested
+remediation downgrades semantic-release across a major-version boundary, so CI reports the
+finding without applying that downgrade. The release workflow also runs manually on `main`
+with a fixed branch pattern. That limits exposure; it does not clear the advisory. Reassess
+when upstream ships a fix or semantic-release removes the affected dependency.
