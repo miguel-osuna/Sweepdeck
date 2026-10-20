@@ -1,12 +1,27 @@
 name: Build and test
-on: [push, pull_request, workflow_dispatch]
+on: [push, pull_request, workflow_dispatch, workflow_call]
 permissions:
   contents: read
 jobs:
+  release-tooling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:release-tools
+
   macos:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test release version metadata
+        run: bash scripts/test-app-version.sh
       - name: Select installed Swift 6.2 Xcode
         shell: bash
         run: |
@@ -21,7 +36,7 @@ jobs:
           exit 1
       - run: bash scripts/swift.sh test
       - run: bash scripts/build-app.sh
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Sweepdeck-local-build
           path: dist/Sweepdeck-macOS.zip
@@ -31,7 +46,7 @@ jobs:
     name: Latest stable Swift 6.4.1 on macOS 26
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Swift 6.4.1 toolchain
         shell: bash
         run: |
@@ -46,5 +61,7 @@ jobs:
           echo "TOOLCHAINS=$toolchain_id" >> "$GITHUB_ENV"
           echo "$toolchain/usr/bin" >> "$GITHUB_PATH"
           "$toolchain/usr/bin/swift" --version
+      - name: Test release version metadata
+        run: bash scripts/test-app-version.sh
       - run: bash scripts/swift.sh test
       - run: bash scripts/build-app.sh

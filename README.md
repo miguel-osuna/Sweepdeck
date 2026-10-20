@@ -80,6 +80,7 @@ not add folders, scan, or authorize cleanup.
 - [Architecture](ARCHITECTURE.md)
 - [Safety and limitations](SAFETY.md)
 - [Compatibility and verification](COMPATIBILITY.md)
+- [Release process](Docs/RELEASING.md)
 - [Contributing](CONTRIBUTING.md)
 - [Roadmap](Docs/ROADMAP.md)
 - [License](LICENSE)

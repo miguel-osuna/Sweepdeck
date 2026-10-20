@@ -1,5 +1,6 @@
 .build/
 dist/
 .swiftpm/
+node_modules/
 .DS_Store
 *.xcuserstate
