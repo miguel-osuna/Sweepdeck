@@ -25,7 +25,7 @@ const githubPlugin = release.plugins.find((plugin) => Array.isArray(plugin) && p
 assert.equal(githubPlugin[1].successComment, false);
 assert.equal(githubPlugin[1].failComment, false);
 
-assert.equal(manifest.devDependencies.semantic-release, "25.0.9");
+assert.equal(manifest.devDependencies["semantic-release"], "25.0.9");
 assert.equal(manifest.devDependencies["@semantic-release/exec"], "7.1.0");
 assert.equal(manifest.devDependencies["@semantic-release/github"], "12.0.9");
 assert.deepEqual(lock.packages[""].devDependencies, manifest.devDependencies);
