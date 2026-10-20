@@ -2,8 +2,8 @@
 
 | Version | Build target | Verification |
 |---|---|---|
-| macOS 15 | Minimum deployment target | Tests and release build passed with Swift 6.2 on the `macos-15` GitHub Actions runner ([run #13](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39477118776)); interactive UI runtime not checked |
-| macOS 26 | Latest-toolchain CI lane | Tests and release build passed with Swift 6.4.1 on the `macos-26` runner ([run #13](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39477118776)); interactive UI runtime not checked |
+| macOS 15 | Minimum deployment target | 37 tests and release build passed with Swift 6.2 on the `macos-15` GitHub Actions runner ([run #62](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39503283738)); interactive UI runtime not checked |
+| macOS 26 | Latest-toolchain CI lane | 37 tests and release build passed with Swift 6.4.1 on the `macos-26` runner ([run #62](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39503283738)); interactive UI runtime not checked |
 | macOS 26.6.2, arm64 | Local host | Build/test/launch evidence recorded below when verified |
 | macOS 27 | Future compatibility target | Not tested; no claim of verified support |
 | Intel / other versions | Not a product target | Not tested |
@@ -39,6 +39,6 @@ No private API, cached directory-layout-based app uninstalling or SDK 27 depende
 ## Verification record
 
 See Docs/VALIDATION.md for exact commands, results, manual checks and limitations.
-GitHub Actions run #13 verifies tests and release compilation on both the `macos-15`
+GitHub Actions run #62 verifies the 37-test suite and release compilation on both the `macos-15`
 baseline and the `macos-26` latest-toolchain lane. It does not verify interactive
 launch, permissions prompts or visual UI behavior on either runner.
