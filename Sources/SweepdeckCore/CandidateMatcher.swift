@@ -10,7 +10,7 @@ public struct CandidateMatchProgress: Equatable, Sendable {
     public let processed: Int
     public let total: Int
 
-    public init(processed: Int, total: Int) {
+    init(processed: Int, total: Int) {
         self.processed = processed
         self.total = total
     }
