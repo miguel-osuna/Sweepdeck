@@ -108,6 +108,12 @@ under `/private/tmp/SweepdeckUIFixture`.
   not prove whether Settings itself works or fails. Its code was reviewed, and
   its preference persistence and bounds are covered by unit tests; visual checks
   of Settings controls and flows remain outstanding.
+- A user-supplied System Light screenshot with no modal showed the Settings
+  detail pane dark while its sidebar remained light. The detail content now fills
+  its column with SwiftUI's semantic background so it follows the selected
+  appearance. The SwiftPM suite and release build compile this change, but there
+  is no UI snapshot test target or working screenshot automation in this setup;
+  the rendered fix still needs a native visual check in System Light and Dark.
 
 The UI checks were manual, fixture-based checks rather than XCTest UI tests. The
 read-only Downloads scan is the only personal-folder scan recorded here; it did

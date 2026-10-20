@@ -61,6 +61,8 @@ struct ContentView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(.background)
             .toolbar {
                 ToolbarItemGroup {
                     Button { model.chooseFolder() } label: { Label("Choose Folder", systemImage: "folder.badge.plus") }
