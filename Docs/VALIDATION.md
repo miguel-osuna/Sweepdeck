@@ -2,9 +2,10 @@
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
 Command Line Tools but no active full Xcode installation. GitHub Actions run
-[#62](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39503283738) passed
-37 tests and the release build with Swift 6.2 on `macos-15` and Swift 6.4.1 on
-`macos-26`. Interactive UI behavior was not checked on either CI runner.
+[#66](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39504487708) passed
+37 tests, the 80% `SweepdeckCore` coverage floor and the release build with Swift
+6.2 on `macos-15` and Swift 6.4.1 on `macos-26`. Interactive UI behavior was not
+checked on either CI runner.
 
 ## Automated checks
 
@@ -31,12 +32,12 @@ Command Line Tools but no active full Xcode installation. GitHub Actions run
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
-- GitHub Actions run [#62](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39503283738)
-  passed the 37-test suite and release app build on the `macos-15` runner with
-  Swift 6.2 and on the `macos-26` runner with Swift 6.4.1. The baseline lane also
-  uploaded the app archive. These checks verify automated compatibility at the
-  deployment floor and with the latest stable toolchain, not interactive UI
-  behavior on either macOS version.
+- GitHub Actions run [#66](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39504487708)
+  passed the 37-test suite, 80% `SweepdeckCore` line-coverage floor and release
+  build on the `macos-15` runner with Swift 6.2 and on the `macos-26` runner with
+  Swift 6.4.1. The baseline lane also uploaded the app archive. These checks
+  verify automated compatibility at the deployment floor and with the latest
+  stable toolchain, not interactive UI behavior on either macOS version.
 - Standalone CLI smokes used generated fixtures only, but could not verify Trash
   without the app's folder-picker flow: direct `FileManager.trashItem` returned
   Cocoa error 513 / OSStatus -5000 (`afpAccessDenied`), and `MacTrashService`
@@ -62,7 +63,10 @@ under `/private/tmp/SweepdeckUIFixture`.
   were visually inspected before the latest asynchronous Explorer update. Cleanup
   also exercised search, category filtering, sorting, details, group selection,
   paging and dry-run preview. The updated Explorer progress and no-match states
-  still need a fresh visual check.
+  still need a fresh visual check. The computer-use runner could not start because
+  its configured executable failed to resolve: `Unable to determine Orca.app path
+  from symlink: /usr/local/bin/orca`. The computer-use skill prohibits falling
+  through to another executable, so no fresh screenshot or visual claim is recorded.
 - The later async CandidateMatcher change was not visually rechecked. Its search,
   category and sort behavior is covered by the new core tests, including a check
   that progress callbacks run off the main thread; this is executor-isolation
