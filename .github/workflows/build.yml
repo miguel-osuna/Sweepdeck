@@ -26,3 +26,25 @@ jobs:
           name: Sweepdeck-local-build
           path: dist/Sweepdeck-macOS.zip
           if-no-files-found: error
+
+  latest-swift:
+    name: Latest stable Swift 6.4.1 on macOS 26
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Swift 6.4.1 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$RUNNER_TEMP/swift-6.4.1-RELEASE-osx.pkg"
+          toolchain="$HOME/Library/Developer/Toolchains/swift-6.4.1-RELEASE.xctoolchain"
+          curl -fL --retry 3 --output "$package" "https://download.swift.org/swift-6.4.1-release/xcode/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE-osx.pkg"
+          pkgutil --check-signature "$package" | grep -Fq 'Developer ID Installer: Swift Open Source (V9AUD2URP3)'
+          installer -pkg "$package" -target CurrentUserHomeDirectory
+          test -d "$toolchain"
+          toolchain_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$toolchain/Info.plist")"
+          echo "TOOLCHAINS=$toolchain_id" >> "$GITHUB_ENV"
+          echo "$toolchain/usr/bin" >> "$GITHUB_PATH"
+          "$toolchain/usr/bin/swift" --version
+      - run: bash scripts/swift.sh test
+      - run: bash scripts/build-app.sh
