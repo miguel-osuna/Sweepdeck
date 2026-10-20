@@ -4,22 +4,15 @@ import SweepdeckCore
 struct CleanupView: View {
     @ObservedObject var model: AppModel
     @State private var query = ""
-    @State private var sort = "Size"
+    @State private var sort = CandidateSort.size
+    @State private var matchingProgress: CandidateMatchProgress?
+    @State private var matchingRequestID = UUID()
     @State private var matchesByRule: [RuleID: [Candidate]] = [:]
+    @State private var matchedSearchKey: CleanupSearchKey?
     @State private var visibleCounts: [RuleID: Int] = [:]
 
-    private func computeMatches() {
-        let filtered = model.candidates.filter {
-            (model.category == nil || $0.rule == model.category) &&
-            (query.isEmpty || $0.id.localizedCaseInsensitiveContains(query))
-        }
-        let sorted = filtered.sorted { a, b in
-            if sort == "Name" { return a.url.lastPathComponent.localizedStandardCompare(b.url.lastPathComponent) == .orderedAscending }
-            if sort == "Oldest" { return a.file.metadata.modified < b.file.metadata.modified }
-            return a.size > b.size
-        }
-        matchesByRule = Dictionary(grouping: sorted, by: \.rule)
-        visibleCounts = [:]
+    private var searchKey: CleanupSearchKey {
+        CleanupSearchKey(query: query, category: model.category, sort: sort, scanStarted: model.report?.started)
     }
 
     var body: some View {
@@ -31,43 +24,62 @@ struct CleanupView: View {
                     Text("All categories").tag(nil as RuleID?)
                     ForEach(RuleID.allCases) { Text($0.title).tag(Optional($0)) }
                 }.frame(width: 250)
-                Picker("Sort", selection: $sort) { Text("Size").tag("Size"); Text("Name").tag("Name"); Text("Oldest").tag("Oldest") }.frame(width: 160)
+                Picker("Sort", selection: $sort) {
+                    Text("Size").tag(CandidateSort.size)
+                    Text("Name").tag(CandidateSort.name)
+                    Text("Oldest").tag(CandidateSort.oldest)
+                }.frame(width: 160)
             }
             if model.candidates.isEmpty {
                 ContentUnavailableView(model.report == nil ? "Start with a scan" : "No matching candidates", systemImage: "sparkles",
                     description: Text(model.report == nil ? "Choose a folder, then scan it to review eligible files." : "Your settings and safety protections determine what appears here."))
                     .frame(maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 16) {
-                        ForEach(RuleID.allCases) { rule in
-                            let matches = matchesByRule[rule] ?? []
-                            if !matches.isEmpty {
-                                let visibleCount = min(matches.count, visibleCounts[rule] ?? 100)
-                                let visibleMatches = matches.prefix(visibleCount)
-                                DisclosureGroup {
-                                    ForEach(visibleMatches) { candidate in CandidateRow(model: model, candidate: candidate) }
-                                    if visibleMatches.count < matches.count {
-                                        let remaining = matches.count - visibleMatches.count
-                                        Button("Show next \(min(100, remaining)) (\(remaining) remaining)") {
-                                            visibleCounts[rule] = min(matches.count, visibleCount + 100)
-                                        }.buttonStyle(.borderless).font(.caption).foregroundStyle(.secondary)
-                                    }
-                                } label: {
-                                    HStack {
-                                        Label(rule.title, systemImage: rule.symbol).font(.headline)
-                                        Text("\(matches.count) files").foregroundStyle(.secondary)
-                                        Spacer()
-                                        let allSelected = matches.allSatisfy { model.selection.ids.contains($0.id) }
-                                        Button(allSelected ? "Deselect all" : "Select all") {
-                                            if allSelected { model.selection.ids.subtract(matches.map(\.id)) }
-                                            else { model.selection.ids.formUnion(matches.map(\.id)) }
-                                        }.buttonStyle(.borderless).disabled(model.isBusy)
-                                    }
-                                }.padding(14).background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
-                            }
+                if matchedSearchKey != searchKey {
+                    Group {
+                        if let matchingProgress, matchingProgress.total > 0 {
+                            ProgressView(
+                                "Updating matches: \(matchingProgress.processed.formatted()) of \(matchingProgress.total.formatted())",
+                                value: Double(matchingProgress.processed),
+                                total: Double(matchingProgress.total)
+                            )
+                        } else {
+                            ProgressView("Updating matching files…")
                         }
-                        if matchesByRule.isEmpty { Text("No files match this filter.").foregroundStyle(.secondary).padding() }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 16) {
+                            ForEach(RuleID.allCases) { rule in
+                                let matches = matchesByRule[rule] ?? []
+                                if !matches.isEmpty {
+                                    let visibleCount = min(matches.count, visibleCounts[rule] ?? 100)
+                                    let visibleMatches = matches.prefix(visibleCount)
+                                    DisclosureGroup {
+                                        ForEach(visibleMatches) { candidate in CandidateRow(model: model, candidate: candidate) }
+                                        if visibleMatches.count < matches.count {
+                                            let remaining = matches.count - visibleMatches.count
+                                            Button("Show next \(min(100, remaining)) (\(remaining) remaining)") {
+                                                visibleCounts[rule] = min(matches.count, visibleCount + 100)
+                                            }.buttonStyle(.borderless).font(.caption).foregroundStyle(.secondary)
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Label(rule.title, systemImage: rule.symbol).font(.headline)
+                                            Text("\(matches.count) files").foregroundStyle(.secondary)
+                                            Spacer()
+                                            let allSelected = matches.allSatisfy { model.selection.ids.contains($0.id) }
+                                            Button(allSelected ? "Deselect all" : "Select all") {
+                                                if allSelected { model.selection.ids.subtract(matches.map(\.id)) }
+                                                else { model.selection.ids.formUnion(matches.map(\.id)) }
+                                            }.buttonStyle(.borderless).disabled(model.isBusy)
+                                        }
+                                    }.padding(14).background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
+                                }
+                            }
+                            if matchesByRule.isEmpty { Text("No files match this filter.").foregroundStyle(.secondary).padding() }
+                        }
                     }
                 }
             }
@@ -84,13 +96,40 @@ struct CleanupView: View {
                     .disabled(model.isBusy || model.selected.isEmpty || model.persistenceError != nil)
             }
         }
-        .onAppear(perform: computeMatches)
-        .onChange(of: model.report?.started) { computeMatches() }
-        .onChange(of: query) { computeMatches() }
-        .onChange(of: model.category) { computeMatches() }
-        .onChange(of: sort) { computeMatches() }
+        .task(id: searchKey) {
+            let key = searchKey
+            let requestID = UUID()
+            matchingRequestID = requestID
+            let candidates = model.candidates
+            matchedSearchKey = nil
+            matchingProgress = nil
+            let result = await CandidateMatcher.match(
+                candidates: candidates,
+                query: key.query,
+                category: key.category,
+                sort: key.sort,
+                onProgress: { progress in
+                    Task { @MainActor in
+                        guard requestID == matchingRequestID, key == searchKey, matchedSearchKey != key else { return }
+                        matchingProgress = progress
+                    }
+                }
+            )
+            guard !Task.isCancelled, requestID == matchingRequestID else { return }
+            matchesByRule = result
+            visibleCounts = [:]
+            matchingProgress = nil
+            matchedSearchKey = key
+        }
         .padding(28)
     }
+}
+
+private struct CleanupSearchKey: Equatable {
+    let query: String
+    let category: RuleID?
+    let sort: CandidateSort
+    let scanStarted: Date?
 }
 
 struct CandidateRow: View {

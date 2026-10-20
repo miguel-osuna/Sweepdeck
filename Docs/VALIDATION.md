@@ -6,7 +6,7 @@ Command Line Tools but no active full Xcode installation.
 
 ## Automated checks
 
-- `bash scripts/swift.sh test` passed: 27 Swift Testing tests in one suite. Coverage
+- `bash scripts/swift.sh test` passed: 33 Swift Testing tests in two suites. Coverage
   includes scanning, cancellation and result limits; path/symlink/repository and
   metadata safety; overlapping-root deduplication; cleanup preview, stale-item
   refusal, fake Trash and partial results; full preference/history round-trip
@@ -15,7 +15,10 @@ Command Line Tools but no active full Xcode installation.
   resolved once per directory and that each file retains the same full identity
   snapshot as a fresh filesystem walk. Progress tests cover the final scan
   snapshot plus cleanup success, stale-item rejection, partial failure,
-  cancellation and batched/final counts.
+  cancellation and batched/final counts. Six CandidateMatcher tests cover
+  case-insensitive path/category filtering, all sort modes and tie ordering, and
+  verify that progress callbacks run off the main thread and reach the final
+  candidate count.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
@@ -43,9 +46,15 @@ under `/private/tmp/SweepdeckUIFixture`.
 - Dashboard, Smart Cleanup, Disk Explorer, System Health and Operation Results
   were visually inspected. Cleanup also exercised search, category filtering,
   sorting, details, group selection, paging and dry-run preview.
-- The progress banner uses an indeterminate scan indicator with the inspected
-  count and a determinate cleanup indicator over ready items. Debug and release
-  builds compile this UI, but the updated banner was not visually rechecked:
+- The later async CandidateMatcher change was not visually rechecked. Its search,
+  category and sort behavior is covered by the new core tests, including a check
+  that progress callbacks run off the main thread; this is executor-isolation
+  evidence, not a runtime screenshot or end-to-end latency measurement. While it
+  recomputes, the view now shows progress and hides rows from the previous search.
+- Progress UI shows the inspected count while scanning, matching count while
+  filtering, and a determinate cleanup indicator over ready items. Debug and
+  release builds compile this UI, but the updated matching indicator was not
+  visually rechecked:
   CUA returned “Sky Computer Use native pipe closed before response” when
   selecting the running app. This feature therefore has build and callback-test
   evidence, but no fresh runtime screenshot.
@@ -81,11 +90,16 @@ the end-to-end test, and Trash was not emptied.
   bounds instantiated rows to 100 per group; replacing Swift with Rust would not
   remove the native view-layout work that caused this hang.
 - Scan and issue caps bound the core report, and the UI now bounds row creation.
-  `computeMatches` still filters and sorts on the main actor. A debug-build probe
-  of 25,000 synthetic records measured 39 ms for a name filter and 7–15 ms for
-  each sort mode; a broad filter plus name sort was about 51 ms before SwiftUI
-  updates. This is not end-to-end typing/layout latency, but it does not support
-  adding async complexity to the data pass yet. Recheck if users still see lag.
+  A debug-build probe of 25,000 synthetic records previously measured 39 ms for a
+  name filter and 7–15 ms for each sort mode; a broad filter plus name sort was
+  about 51 ms before SwiftUI updates. Although that data pass was relatively
+  short, the supplied stack sample implicated main-thread SwiftUI layout. The
+  filter/category/sort pass now runs in nonisolated async SweepdeckCore work,
+  and its progress callback is verified to run off the main thread. This proves
+  executor isolation, not end-to-end responsiveness or faster total throughput.
+  A Swift sort already
+  in progress cannot be interrupted, but its result is discarded if the search
+  task was cancelled; the bounded 25,000-record scan cap limits that work.
 - A separate debug SwiftPM scan fixture with 3,000 old `.dmg` files in one
   directory took 5.38 seconds before and 1.30 seconds after caching validated
   directory ancestry (about 4.1× faster). Fixture creation was outside the timed
@@ -112,6 +126,13 @@ the end-to-end test, and Trash was not emptied.
   concurrent tree mutations can make scan results stale; the preview and final
   operation reject changed identities or newly protected ancestry. No scan
   result is persisted across operations.
-- No additional code defect was established. Settings controls and the remaining
-  Settings flows still need a visual check because the automation service fails
-  when entering that screen; the project has no XCTest UI-test runtime here.
+- Adversarial review caught and fixed a stale-results window: a changed query
+  previously left the prior rows selectable until async matching completed. The
+  view now shows an updating state until results match the current search key.
+  This UI state has compile coverage but still needs a fresh visual check.
+- No additional safety defect was established in this pass. The matcher change
+  leaves scanning, selection, preview, and cleanup validation boundaries intact.
+  Settings controls and the remaining Settings flows still need a visual check
+  because the automation service fails when entering that screen; the project has
+  no XCTest UI-test runtime here. The latest matcher UI also lacks a fresh visual
+  check for the same computer-use bridge failure.

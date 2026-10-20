@@ -26,9 +26,11 @@ policy snapshots are immutable during operations; the UI disables relevant edits
   issue detail cap, cancellation and progress every 64 visited entries.
 - CleanupExecutor.swift: side-effect-free preview, expiring plans and injectable
   `TrashService`. Production adapter only uses coordinated macOS Trash.
-- CleanupView caches the current filter/sort by rule and initially renders 100
-  rows per group. “Show next” pages preserve access to every match without
-  materializing thousands of SwiftUI row views at once.
+- CleanupView sends query/category filtering and sorting to async SweepdeckCore
+  work away from the UI actor, reports batched matching progress, discards stale
+  task results, and initially renders 100 rows per group. “Show next” pages
+  preserve access to every match without materializing thousands of SwiftUI row
+  views at once.
 - Persistence.swift: versioned atomic JSON, local restricted file permissions,
   no silent recovery from malformed data, bounded operation history.
 - Metrics.swift: public Mach, sysctl, URL volume and ProcessInfo adapters.
