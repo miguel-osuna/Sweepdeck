@@ -6,7 +6,7 @@ jobs:
   macos:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
       - name: Select installed Swift 6.2 Xcode
@@ -28,7 +28,7 @@ jobs:
           test -n "$coverage_json"
           python3 scripts/check_core_coverage.py "$coverage_json" 80
       - run: bash scripts/build-app.sh
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Sweepdeck-local-build
           path: dist/Sweepdeck-macOS.zip
@@ -38,7 +38,7 @@ jobs:
     name: Latest stable Swift 6.4.1 on macOS 26
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
       - name: Install Swift 6.4.1 toolchain
