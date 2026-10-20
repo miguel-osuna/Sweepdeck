@@ -1,0 +1,183 @@
+import SwiftUI
+import SweepdeckCore
+
+struct CleanupView: View {
+    @ObservedObject var model: AppModel
+    @State private var query = ""
+    @State private var sort = "Size"
+    @State private var matchesByRule: [RuleID: [Candidate]] = [:]
+    @State private var visibleCounts: [RuleID: Int] = [:]
+
+    private func computeMatches() {
+        let filtered = model.candidates.filter {
+            (model.category == nil || $0.rule == model.category) &&
+            (query.isEmpty || $0.id.localizedCaseInsensitiveContains(query))
+        }
+        let sorted = filtered.sorted { a, b in
+            if sort == "Name" { return a.url.lastPathComponent.localizedStandardCompare(b.url.lastPathComponent) == .orderedAscending }
+            if sort == "Oldest" { return a.file.metadata.modified < b.file.metadata.modified }
+            return a.size > b.size
+        }
+        matchesByRule = Dictionary(grouping: sorted, by: \.rule)
+        visibleCounts = [:]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            PageTitle(title: "Smart Cleanup", subtitle: "A suggestion is a starting point. You make the final call.")
+            HStack {
+                TextField("Filter by name or path", text: $query).textFieldStyle(.roundedBorder)
+                Picker("Category", selection: $model.category) {
+                    Text("All categories").tag(nil as RuleID?)
+                    ForEach(RuleID.allCases) { Text($0.title).tag(Optional($0)) }
+                }.frame(width: 250)
+                Picker("Sort", selection: $sort) { Text("Size").tag("Size"); Text("Name").tag("Name"); Text("Oldest").tag("Oldest") }.frame(width: 160)
+            }
+            if model.candidates.isEmpty {
+                ContentUnavailableView(model.report == nil ? "Start with a scan" : "No matching candidates", systemImage: "sparkles",
+                    description: Text(model.report == nil ? "Choose a folder, then scan it to review eligible files." : "Your settings and safety protections determine what appears here."))
+                    .frame(maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        ForEach(RuleID.allCases) { rule in
+                            let matches = matchesByRule[rule] ?? []
+                            if !matches.isEmpty {
+                                let visibleCount = min(matches.count, visibleCounts[rule] ?? 100)
+                                let visibleMatches = matches.prefix(visibleCount)
+                                DisclosureGroup {
+                                    ForEach(visibleMatches) { candidate in CandidateRow(model: model, candidate: candidate) }
+                                    if visibleMatches.count < matches.count {
+                                        let remaining = matches.count - visibleMatches.count
+                                        Button("Show next \(min(100, remaining)) (\(remaining) remaining)") {
+                                            visibleCounts[rule] = min(matches.count, visibleCount + 100)
+                                        }.buttonStyle(.borderless).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                } label: {
+                                    HStack {
+                                        Label(rule.title, systemImage: rule.symbol).font(.headline)
+                                        Text("\(matches.count) files").foregroundStyle(.secondary)
+                                        Spacer()
+                                        let allSelected = matches.allSatisfy { model.selection.ids.contains($0.id) }
+                                        Button(allSelected ? "Deselect all" : "Select all") {
+                                            if allSelected { model.selection.ids.subtract(matches.map(\.id)) }
+                                            else { model.selection.ids.formUnion(matches.map(\.id)) }
+                                        }.buttonStyle(.borderless).disabled(model.isBusy)
+                                    }
+                                }.padding(14).background(.quaternary.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        if matchesByRule.isEmpty { Text("No files match this filter.").foregroundStyle(.secondary).padding() }
+                    }
+                }
+            }
+            if let report = model.report { ScanSummary(report: report) }
+            Divider()
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(model.selected.count) selected · \(bytes(model.selectedBytes))").font(.headline)
+                    Text("All current rules require review. No automatic low-risk selection.").font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Clear selection") { model.selection = Selection() }.disabled(model.isBusy || model.selected.isEmpty)
+                Button("Preview Cleanup…") { model.preview() }.buttonStyle(.borderedProminent)
+                    .disabled(model.isBusy || model.selected.isEmpty || model.persistenceError != nil)
+            }
+        }
+        .onAppear(perform: computeMatches)
+        .onChange(of: model.report?.started) { computeMatches() }
+        .onChange(of: query) { computeMatches() }
+        .onChange(of: model.category) { computeMatches() }
+        .onChange(of: sort) { computeMatches() }
+        .padding(28)
+    }
+}
+
+struct CandidateRow: View {
+    @ObservedObject var model: AppModel
+    let candidate: Candidate
+    @State private var expanded = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Toggle(isOn: Binding(get: { model.selection.ids.contains(candidate.id) }, set: { _ in model.selection.toggle(candidate) })) {
+                    Text(candidate.url.lastPathComponent).fontWeight(.medium)
+                }.toggleStyle(.checkbox).disabled(model.isBusy)
+                Spacer()
+                Text(bytes(candidate.size)).monospacedDigit()
+                Button { expanded.toggle() } label: { Image(systemName: expanded ? "chevron.up" : "info.circle") }
+                    .buttonStyle(.borderless).accessibilityLabel("Inspect \(candidate.url.lastPathComponent)")
+            }
+            Text(candidate.id).font(.caption).foregroundStyle(.secondary).textSelection(.enabled).lineLimit(2)
+            if expanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(candidate.rule.reason)
+                    LabeledContent("Risk", value: candidate.risk)
+                    LabeledContent("Modified", value: candidate.file.metadata.modified.formatted())
+                    LabeledContent("Method", value: "Move to macOS Trash")
+                    Text("Regeneration: \(candidate.regeneration)").foregroundStyle(.secondary)
+                    HStack {
+                        Button("Reveal in Finder") { model.reveal(candidate.url) }
+                        Button("Exclude this file") { model.exclude(candidate.url) }.disabled(model.isBusy)
+                        Button("Exclude parent folder") { model.exclude(candidate.url.deletingLastPathComponent()) }.disabled(model.isBusy)
+                    }
+                }.font(.callout).padding(.leading, 20)
+            }
+        }.padding(12).background(.background, in: RoundedRectangle(cornerRadius: 8))
+            .contextMenu {
+                Button("Reveal in Finder") { model.reveal(candidate.url) }
+                Button("Exclude this file") { model.exclude(candidate.url) }.disabled(model.isBusy)
+            }
+    }
+}
+
+struct ConfirmationView: View {
+    @ObservedObject var model: AppModel
+    let plan: CleanupPlan
+    @State private var acknowledged = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            PageTitle(title: "Review before moving", subtitle: "Dry run complete. No files have been changed.")
+            notice("\(plan.ready.count) files · \(bytes(plan.bytes)) estimated. Files will be moved to Trash, not permanently deleted. Disk space may not increase until you empty Trash yourself.")
+            List {
+                ForEach(plan.ready) { candidate in
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack { Text(candidate.url.lastPathComponent).fontWeight(.medium); Spacer(); Text(bytes(candidate.size)) }
+                        Text(candidate.id).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                        Text("Review Required · Move to Trash").font(.caption).foregroundStyle(.orange)
+                    }
+                }
+                ForEach(plan.rejected) { item in
+                    VStack(alignment: .leading) { Text(item.path).font(.caption); Text("Rejected: \(item.message)").foregroundStyle(.orange) }
+                }
+            }.frame(minHeight: 230)
+            Toggle("I reviewed these files and want to move them to Trash.", isOn: $acknowledged)
+            Text("Files are validated again at execution. This preview expires after five minutes. Close apps using these files before continuing.").font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Button("Back to Review", role: .cancel) { model.plan = nil }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Move \(plan.ready.count) Files to Trash", role: .destructive) { model.confirm(plan) }
+                    .disabled(!acknowledged || plan.ready.isEmpty).buttonStyle(.borderedProminent)
+            }
+        }.padding(26).frame(width: 720, height: 590)
+    }
+}
+
+struct OperationView: View {
+    @ObservedObject var model: AppModel
+    let operation: OperationRecord
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            PageTitle(title: "Operation results", subtitle: "\(operation.items.filter { $0.status == .trashed }.count) files moved to Trash. Review every result below.")
+            List(operation.items) { item in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(item.path).textSelection(.enabled)
+                    Text("\(item.status.rawValue.capitalized): \(item.message)").font(.caption).foregroundStyle(item.status == .trashed ? Color.secondary : Color.orange)
+                    if let path = item.trashPath { Button("Reveal in Trash") { model.reveal(URL(fileURLWithPath: path)) }.buttonStyle(.borderless) }
+                }
+            }
+            notice("To restore a file, open Trash in Finder and move it back. Sweepdeck never empties Trash. History retains up to 1,000 recent item results.")
+            HStack { Button("Open Trash") { model.revealTrash() }; Spacer(); Button("Done") { model.lastOperation = nil }.keyboardShortcut(.defaultAction) }
+        }.padding(26).frame(width: 750, height: 570)
+    }
+}

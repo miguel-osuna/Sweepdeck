@@ -1,0 +1,27 @@
+name: Build and test
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select installed Swift 6.2 Xcode
+        shell: bash
+        run: |
+          for app in /Applications/Xcode*.app; do
+            export DEVELOPER_DIR="$app/Contents/Developer"
+            if xcrun swift --version | grep -q 'Swift version 6.2'; then
+              echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
+          exit 1
+      - run: bash scripts/swift.sh test
+      - run: bash scripts/build-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sweepdeck-local-build
+          path: dist/Sweepdeck.app
