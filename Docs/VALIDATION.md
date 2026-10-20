@@ -114,12 +114,20 @@ the end-to-end test, and Trash was not emptied.
   interval. This is a single-host library measurement, not an end-to-end UI
   benchmark; automated coverage checks ancestry-call counts and exact snapshots
   rather than enforcing a flaky time threshold.
-- A Rust core is technically possible behind a Swift FFI, but this scan is
-  dominated by filesystem metadata and Apple URL resource checks. The measured
-  improvement removes repeated ancestry I/O while retaining those native checks.
-  `rustc` and `cargo` are not installed on this host, so no equivalent Rust
-  benchmark was run; the current evidence does not justify adding a second
-  toolchain and FFI layer.
+- A descriptor-based Rust enumeration prototype was compared with current HEAD
+  using the same temporary 3,000-file fixture on this Mac, with three sequential
+  release scans per implementation against that already-created fixture.
+  The Swift median was 0.890 seconds
+  (0.867/0.890/0.942); the Rust-backed median was 1.423 seconds
+  (1.382/1.423/1.424). This three-run, one-host experiment is not a general
+  performance claim, but it shows the prototype made this scan about 60% slower.
+  The prototype crossed the FFI and created a Swift URL for each entry; these are
+  plausible sources of overhead, but this trial did not profile the difference.
+  It used the latest stable [Rust 1.99.1](https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/)
+  and [libc 0.2.191](https://docs.rs/libc/0.2.191/libc/). The prototype was
+  discarded; the production scanner remains Swift, where the measured ancestry
+  cache and native resource checks already improve scan performance without a
+  second toolchain.
 - Cleanup still revalidates the selected root, ancestry, file identity/metadata,
   exclusions and rule before Trash, including inside coordinated access. The
   remaining non-atomic pathname race against an uncoordinated local process is
