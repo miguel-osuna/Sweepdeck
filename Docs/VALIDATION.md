@@ -2,8 +2,8 @@
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
 Command Line Tools but no active full Xcode installation. GitHub Actions run
-[#66](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39504487708) passed
-37 tests, the 80% `SweepdeckCore` coverage floor and the release build with Swift
+[#70](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39506723318) passed
+41 tests, the 80% `SweepdeckCore` coverage floor and the release build with Swift
 6.2 on `macos-15` and Swift 6.4.1 on `macos-26`. Interactive UI behavior was not
 checked on either CI runner.
 
@@ -34,8 +34,8 @@ checked on either CI runner.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
-- GitHub Actions run [#66](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39504487708)
-  passed the 37-test suite, 80% `SweepdeckCore` line-coverage floor and release
+- GitHub Actions run [#70](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39506723318)
+  passed the 41-test suite, 80% `SweepdeckCore` line-coverage floor and release
   build on the `macos-15` runner with Swift 6.2 and on the `macos-26` runner with
   Swift 6.4.1. The baseline lane also uploaded the app archive. These checks
   verify automated compatibility at the deployment floor and with the latest
