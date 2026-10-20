@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 const release = JSON.parse(await readFile(".releaserc.json", "utf8"));
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
+const releaseWorkflow = await readFile(".github/workflows/release.yml", "utf8");
 
 assert.equal(release.repositoryUrl, "https://github.com/miguel-osuna/Sweepdeck.git");
 assert.deepEqual(release.branches, ["main"]);
@@ -29,6 +30,9 @@ assert.equal(manifest.devDependencies["semantic-release"], "25.0.9");
 assert.equal(manifest.devDependencies["@semantic-release/exec"], "7.1.0");
 assert.equal(manifest.devDependencies["@semantic-release/github"], "12.0.9");
 assert.deepEqual(lock.packages[""].devDependencies, manifest.devDependencies);
+assert.match(releaseWorkflow, /actions:\s*read/);
+assert.match(releaseWorkflow, /bash scripts\/check-release-environment\.sh/);
+assert.match(releaseWorkflow, /environment: release/);
 
 await import("semantic-release");
 await import("@semantic-release/exec");
