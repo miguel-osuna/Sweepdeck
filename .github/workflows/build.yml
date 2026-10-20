@@ -6,7 +6,7 @@ jobs:
   macos:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Select installed Swift 6.2 Xcode
         shell: bash
         run: |
@@ -21,7 +21,7 @@ jobs:
           exit 1
       - run: bash scripts/swift.sh test
       - run: bash scripts/build-app.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Sweepdeck-local-build
           path: dist/Sweepdeck-macOS.zip
