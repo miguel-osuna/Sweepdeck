@@ -64,6 +64,10 @@ and no app process.
 A fourth check after merging the main-branch test-runner fix, in [Actions run 39608770720](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39608770720),
 also passed audit, style, install, bundle inspection, and uninstall before reproducing
 the same quarantine-preserving Gatekeeper rejection and failed first launch.
+A fifth check after rebasing onto the appearance fix on `main`, in [Actions run 39624090614](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090614),
+again passed audit, style, install, bundle inspection, and uninstall, then reproduced
+Gatekeeper rejection (exit status 3), the 15-second Launch Services timeout, and no
+app process.
 
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
@@ -85,7 +89,7 @@ PR is merged. No cross-repository Actions token is required for this manual proc
 
 Neither App Store submission nor notarization is required by the cask format. They
 remain Gatekeeper compatibility decisions. The current app build is ad-hoc signed,
-and four quarantined candidates were rejected by Gatekeeper on a disposable Apple
+and five quarantined candidates were rejected by Gatekeeper on a disposable Apple
 Silicon runner. Do not mark the release ready or publish the cask unless a future
 supported build passes the same checks. Never remove quarantine or bypass macOS
 security controls.

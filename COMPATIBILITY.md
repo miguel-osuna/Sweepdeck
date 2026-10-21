@@ -2,9 +2,9 @@
 
 | Version | Build target | Verification |
 |---|---|---|
-| macOS 15 | Minimum deployment target | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.2 on the `macos-15` runner ([merged PR run 39608770713](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39608770713)); interactive UI runtime not checked |
-| macOS 26 | Latest stable Swift toolchain lane | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.4.1 on the `macos-26` runner ([merged PR run 39608770713](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39608770713)); interactive UI runtime not checked |
-| macOS 27 preview | Preview compatibility lane | 48 tests, 87.5% core executable-line coverage and release build passed on the Xcode 27 preview runner ([merged PR run 39608770713](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39608770713)). An earlier run on the prior revision exited with signal 11 in `swiftpm-testing-helper` during `SweepdeckAppearanceTests` ([run 39570272638](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570272638)); the merged revision passes. Interactive UI runtime not checked |
+| macOS 15 | Minimum deployment target | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.2 on the `macos-15` runner ([rebased PR run 39624090617](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090617)); interactive UI runtime not checked |
+| macOS 26 | Latest stable Swift toolchain lane | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.4.1 on the `macos-26` runner ([rebased PR run 39624090617](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090617)); interactive UI runtime not checked |
+| macOS 27 preview | Preview compatibility lane | 48 tests, 87.5% core executable-line coverage and release build passed on the Xcode 27 preview runner ([rebased PR run 39624090617](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090617)). An earlier run on the prior revision exited with signal 11 in `swiftpm-testing-helper` during `SweepdeckAppearanceTests` ([run 39570272638](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570272638)); the rebased revision passes. Interactive UI runtime not checked |
 | macOS 26.6.2, arm64 | Local host | 43 tests, 85.4% core executable-line coverage and release bundle build passed; see `Docs/VALIDATION.md` for fixture checks and outstanding pixel-level visual verification |
 | Intel / other versions | Not a product target | Not tested |
 
@@ -50,6 +50,10 @@ A fourth check after merging the main-branch test-runner fix, in [candidate run 
 again passed audit, style, install, bundle inspection, and uninstall; quarantine
 remained present, Gatekeeper rejected the app (exit status 3), Launch Services timed
 out after 15 seconds, and no app process appeared.
+A fifth check after rebasing onto the appearance fix on `main`, in [candidate run 39624090614](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090614),
+again passed audit, style, install, bundle inspection, and uninstall while retaining
+quarantine; Gatekeeper rejected the app (exit status 3), Launch Services timed out after
+15 seconds, and no app process appeared.
 
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable
