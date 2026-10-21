@@ -54,6 +54,13 @@ A fifth check after rebasing onto the appearance fix on `main`, in [candidate ru
 again passed audit, style, install, bundle inspection, and uninstall while retaining
 quarantine; Gatekeeper rejected the app (exit status 3), Launch Services timed out after
 15 seconds, and no app process appeared.
+A sixth check on the updated PR branch, in [candidate run 39627722049](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39627722049),
+built and verified the 0.1.0 candidate archive and sidecar checksum
+(`30eba142232435ee01dcaed1639a0f5f60d15696fa2056e209f069bf9876cba0`). Homebrew
+audit/style, install, bundle inspection, and uninstall passed with quarantine intact;
+Gatekeeper rejected the app (status 3), Launch Services timed out after 15 seconds,
+and no app process appeared. This is a candidate artifact checksum, not the checksum
+of a published release asset.
 
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable

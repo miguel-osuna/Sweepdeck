@@ -68,6 +68,18 @@ A fifth check after rebasing onto the appearance fix on `main`, in [Actions run 
 again passed audit, style, install, bundle inspection, and uninstall, then reproduced
 Gatekeeper rejection (exit status 3), the 15-second Launch Services timeout, and no
 app process.
+A sixth check on the updated PR branch, in [Actions run 39627722049](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39627722049),
+built the versioned 0.1.0 candidate archive and verified its sidecar checksum
+(`30eba142232435ee01dcaed1639a0f5f60d15696fa2056e209f069bf9876cba0`). Homebrew
+audit/style, install, bundle inspection, and uninstall passed. The app retained its
+Homebrew quarantine attribute, `spctl` rejected it (status 3), Launch Services timed
+out after 15 seconds, and no app process appeared. This checksum belongs to that
+candidate run only; no public release asset or cask was published.
+
+The publish configuration is also incomplete as of 2026-10-21: the repository has no
+`release` GitHub Environment and no `RELEASE_READY` Actions variable. Before publishing,
+the maintainer must set `RELEASE_READY=true` and configure a required reviewer on the
+`release` environment. The release workflow fails closed without these controls.
 
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
@@ -89,7 +101,7 @@ PR is merged. No cross-repository Actions token is required for this manual proc
 
 Neither App Store submission nor notarization is required by the cask format. They
 remain Gatekeeper compatibility decisions. The current app build is ad-hoc signed,
-and five quarantined candidates were rejected by Gatekeeper on a disposable Apple
+and at least six quarantined candidates were rejected by Gatekeeper on a disposable Apple
 Silicon runner. Do not mark the release ready or publish the cask unless a future
 supported build passes the same checks. Never remove quarantine or bypass macOS
 security controls.
