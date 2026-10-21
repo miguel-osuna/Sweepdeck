@@ -59,7 +59,7 @@ private struct SchemeProbe: View {
 }
 
 @MainActor
-private func verifyDarkToSystemAppearanceTransition() async throws {
+private func verifyDarkToSystemAppearanceTransition() throws {
     let application = NSApplication.shared
     let originalApplicationAppearance = application.appearance
     application.appearance = NSAppearance(named: .aqua)
@@ -85,8 +85,8 @@ private func verifyDarkToSystemAppearanceTransition() async throws {
         application.appearance = originalApplicationAppearance
     }
 
-    let darkSidebarWasRendered = await waitForScheme(.dark, in: sidebarScheme)
-    let darkDetailWasRendered = await waitForScheme(.dark, in: detailScheme)
+    let darkSidebarWasRendered = waitForScheme(.dark, in: sidebarScheme)
+    let darkDetailWasRendered = waitForScheme(.dark, in: detailScheme)
     try expect(darkSidebarWasRendered, "The sidebar did not render dark appearance.")
     try expect(darkDetailWasRendered, "The detail view did not render dark appearance.")
     try expect(window.appearance?.name == .darkAqua, "Dark mode was not applied to the window.")
@@ -95,8 +95,8 @@ private func verifyDarkToSystemAppearanceTransition() async throws {
     try expect(darkImage != nil, "The dark appearance view did not render an image.")
 
     selection.mode = .system
-    let systemLightSidebarWasRendered = await waitForScheme(.light, in: sidebarScheme)
-    let systemLightDetailWasRendered = await waitForScheme(.light, in: detailScheme)
+    let systemLightSidebarWasRendered = waitForScheme(.light, in: sidebarScheme)
+    let systemLightDetailWasRendered = waitForScheme(.light, in: detailScheme)
     try expect(systemLightSidebarWasRendered, "The sidebar did not follow System light appearance.")
     try expect(systemLightDetailWasRendered, "The detail view did not follow System light appearance.")
     try expect(window.appearance == nil, "System appearance should clear the forced window appearance.")
@@ -105,14 +105,14 @@ private func verifyDarkToSystemAppearanceTransition() async throws {
     try expect(systemLightImage != nil, "The System light view did not render an image.")
 
     application.appearance = NSAppearance(named: .darkAqua)
-    let systemSidebarFollowedDarkAppearance = await waitForScheme(.dark, in: sidebarScheme)
-    let systemDetailFollowedDarkAppearance = await waitForScheme(.dark, in: detailScheme)
+    let systemSidebarFollowedDarkAppearance = waitForScheme(.dark, in: sidebarScheme)
+    let systemDetailFollowedDarkAppearance = waitForScheme(.dark, in: detailScheme)
     try expect(systemSidebarFollowedDarkAppearance, "The sidebar did not follow System dark appearance.")
     try expect(systemDetailFollowedDarkAppearance, "The detail view did not follow System dark appearance.")
 
     selection.mode = .light
-    let forcedLightSidebarWasRendered = await waitForScheme(.light, in: sidebarScheme)
-    let forcedLightDetailWasRendered = await waitForScheme(.light, in: detailScheme)
+    let forcedLightSidebarWasRendered = waitForScheme(.light, in: sidebarScheme)
+    let forcedLightDetailWasRendered = waitForScheme(.light, in: detailScheme)
     try expect(forcedLightSidebarWasRendered, "The sidebar did not render forced light appearance.")
     try expect(forcedLightDetailWasRendered, "The detail view did not render forced light appearance.")
     try expect(window.appearance?.name == .aqua, "Light mode was not applied to the window.")
@@ -121,16 +121,16 @@ private func verifyDarkToSystemAppearanceTransition() async throws {
     try expect(forcedLightImage != nil, "The forced light view did not render an image.")
 
     selection.mode = .system
-    let systemDarkSidebarWasRendered = await waitForScheme(.dark, in: sidebarScheme)
-    let systemDarkDetailWasRendered = await waitForScheme(.dark, in: detailScheme)
+    let systemDarkSidebarWasRendered = waitForScheme(.dark, in: sidebarScheme)
+    let systemDarkDetailWasRendered = waitForScheme(.dark, in: detailScheme)
     try expect(systemDarkSidebarWasRendered, "The sidebar did not follow System dark appearance after forced light mode.")
     try expect(systemDarkDetailWasRendered, "The detail view did not follow System dark appearance after forced light mode.")
     try expect(window.appearance == nil, "System appearance should clear the forced window appearance after light mode.")
     try expect(window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua, "The window did not resolve to System dark appearance after forced light mode.")
 
     application.appearance = NSAppearance(named: .aqua)
-    let systemSidebarFollowedLightAppearance = await waitForScheme(.light, in: sidebarScheme)
-    let systemDetailFollowedLightAppearance = await waitForScheme(.light, in: detailScheme)
+    let systemSidebarFollowedLightAppearance = waitForScheme(.light, in: sidebarScheme)
+    let systemDetailFollowedLightAppearance = waitForScheme(.light, in: detailScheme)
     try expect(systemSidebarFollowedLightAppearance, "The sidebar did not follow System light appearance after dark mode.")
     try expect(systemDetailFollowedLightAppearance, "The detail view did not follow System light appearance after dark mode.")
 
@@ -154,9 +154,9 @@ private func expect(_ condition: @autoclosure () -> Bool, _ message: String) thr
 #if SWEEPDECK_USE_XCTEST && canImport(XCTest)
 final class AppearanceTransitionTests: XCTestCase {
     @MainActor
-    func test_switchingFromDarkToSystemKeepsSplitViewInSystemAppearance() async {
+    func test_switchingFromDarkToSystemKeepsSplitViewInSystemAppearance() {
         do {
-            try await verifyDarkToSystemAppearanceTransition()
+            try verifyDarkToSystemAppearanceTransition()
         } catch {
             XCTFail(String(describing: error))
         }
@@ -164,8 +164,8 @@ final class AppearanceTransitionTests: XCTestCase {
 }
 #else
 @MainActor
-@Test func switchingFromDarkToSystemKeepsSplitViewInSystemAppearance() async throws {
-    try await verifyDarkToSystemAppearanceTransition()
+@Test func switchingFromDarkToSystemKeepsSplitViewInSystemAppearance() throws {
+    try verifyDarkToSystemAppearanceTransition()
 }
 #endif
 
@@ -202,10 +202,11 @@ private func renderedDifferenceCount(_ left: NSBitmapImageRep, _ right: NSBitmap
 }
 
 @MainActor
-private func waitForScheme(_ expected: ColorScheme, in effectiveScheme: EffectiveScheme) async -> Bool {
-    for _ in 0..<40 {
+private func waitForScheme(_ expected: ColorScheme, in effectiveScheme: EffectiveScheme) -> Bool {
+    let deadline = Date(timeIntervalSinceNow: 1)
+    while Date() < deadline {
         if effectiveScheme.value == expected { return true }
-        try? await Task.sleep(for: .milliseconds(25))
+        _ = RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.025))
     }
     return effectiveScheme.value == expected
 }
