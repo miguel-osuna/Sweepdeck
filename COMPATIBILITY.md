@@ -13,8 +13,12 @@ the builds and runners that were actually checked.
 | macOS 27 preview | Xcode 27 preview | Release verification, tests, coverage gate, and app build passed in [release run 39658605258](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39658605258). |
 | Intel Macs / other macOS versions | — | Not tested; Intel is not a product target. |
 
-These results are for the published 0.1.0 source revision. The app icon change is in a
-separate pull request and has not yet been built by CI.
+These release-matrix results describe the published 0.1.0 source revision. The selected
+icon and app-bundle integration in [PR #12](https://github.com/miguel-osuna/Sweepdeck/pull/12)
+also passed the macOS 15, macOS 26, and macOS 27 preview build lanes in
+[Build and test run 39662470145](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39662470145),
+and the disposable Homebrew candidate smoke in
+[run 39662470012](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39662470012).
 
 ## Homebrew and Gatekeeper evidence
 
