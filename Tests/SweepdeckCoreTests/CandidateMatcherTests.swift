@@ -124,6 +124,74 @@ struct CandidateMatcherTests {
         #expect(result[.installers, default: []].map(\.url.lastPathComponent) == ["Older.dmg", "Newer.dmg"])
     }
 
+    @Test func rustBatchSortMatchesSwiftReferenceForLargeASCIIResults() throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let candidates = (0..<3_000).map { index in
+            fixture.candidate(
+                "item-\(index).dmg",
+                size: Int64((index * 7_919) % 257),
+                modified: Int64(index % 101),
+                rule: index.isMultiple(of: 2) ? .installers : .oldDownloads
+            )
+        }
+
+        let expectedBySize = candidates.sorted { left, right in
+            left.size == right.size ? left.id < right.id : left.size > right.size
+        }
+        let expectedByAge = candidates.sorted { left, right in
+            let leftDate = left.file.metadata.modified
+            let rightDate = right.file.metadata.modified
+            return leftDate == rightDate ? left.id < right.id : leftDate < rightDate
+        }
+        let actualBySize = RustCandidateSorter.sorted(candidates, by: .size)
+        let actualByAge = RustCandidateSorter.sorted(candidates, by: .oldest)
+
+        #expect(actualBySize?.map(\.id) == expectedBySize.map(\.id))
+        #expect(actualByAge?.map(\.id) == expectedByAge.map(\.id))
+
+        if ProcessInfo.processInfo.environment["SWEEPDECK_PERF_BENCHMARK"] == "1" {
+            let rustMedian = medianNanoseconds(repeating: 11) {
+                _ = RustCandidateSorter.sorted(candidates, by: .size)
+            }
+            let swiftMedian = medianNanoseconds(repeating: 11) {
+                _ = candidates.sorted { left, right in
+                    left.size == right.size ? left.id < right.id : left.size > right.size
+                }
+            }
+            print("3,000 candidate size sort median: Rust FFI \(rustMedian) ns; Swift \(swiftMedian) ns")
+        }
+    }
+
+    @Test func rustBatchSortFallsBackForNonASCIIPaths() throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let candidates = (0..<RustCandidateSorter.minimumBatchSize).map { index in
+            fixture.candidate("item-\(index).dmg", size: Int64(index), modified: Int64(index), rule: .installers)
+        } + [fixture.candidate("café.dmg", size: 10_000, modified: 1, rule: .installers)]
+
+        #expect(RustCandidateSorter.sorted(candidates, by: .size) == nil)
+    }
+
+    @Test func rustSorterUsesBatchThresholdAndFallsBackForNameSort() throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let belowThreshold = (0..<(RustCandidateSorter.minimumBatchSize - 1)).map { index in
+            fixture.candidate("below-\(index).dmg", size: Int64(index), modified: Int64(index), rule: .installers)
+        }
+        let atThreshold = (0..<RustCandidateSorter.minimumBatchSize).map { index in
+            fixture.candidate("at-\(index).dmg", size: Int64(index), modified: Int64(index), rule: .installers)
+        }
+
+        #expect(RustCandidateSorter.sorted(belowThreshold, by: .size) == nil)
+        #expect(RustCandidateSorter.sorted(atThreshold, by: .name) == nil)
+        let sortedAtThreshold = RustCandidateSorter.sorted(atThreshold, by: .size)
+        let expected = atThreshold.sorted { left, right in
+            left.size == right.size ? left.id < right.id : left.size > right.size
+        }
+        #expect(sortedAtThreshold?.map(\.id) == expected.map(\.id))
+    }
+
     @MainActor @Test func reportsBatchProgressFromOffMainThreadMatcher() async throws {
         let fixture = try CandidateMatcherFixture()
         defer { fixture.dispose() }
@@ -143,4 +211,14 @@ struct CandidateMatcherTests {
             CandidateMatchProgress(processed: 3_000, total: 3_000)
         ])
     }
+}
+
+private func medianNanoseconds(repeating count: Int, operation: () -> Void) -> Int64 {
+    let samples = (0..<count).map { _ -> Int64 in
+        let start = ContinuousClock.now
+        operation()
+        let elapsed = start.duration(to: .now).components
+        return elapsed.seconds * 1_000_000_000 + elapsed.attoseconds / 1_000_000_000
+    }
+    return samples.sorted()[samples.count / 2]
 }

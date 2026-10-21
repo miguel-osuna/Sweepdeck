@@ -38,6 +38,45 @@ fi
 
 command_name="${1:-build}"
 if [[ $# -gt 0 ]]; then shift; fi
+
+if [[ "$command_name" == "test" || "$command_name" == "build" ]]; then
+    toolchain_bin="$PWD/.build/rustup/toolchains/1.99.1-aarch64-apple-darwin/bin"
+    local_rust_toolchain=false
+    if [[ -x "$toolchain_bin/cargo" && -x "$toolchain_bin/rustc" ]]; then
+        export CARGO_HOME="$PWD/.build/cargo"
+        export RUSTUP_HOME="$PWD/.build/rustup"
+        export PATH="$toolchain_bin:$PATH"
+        export RUSTC="$toolchain_bin/rustc"
+        export RUSTDOC="$toolchain_bin/rustdoc"
+        cargo_command="$toolchain_bin/cargo"
+        local_rust_toolchain=true
+    elif command -v cargo >/dev/null 2>&1; then
+        cargo_command="$(command -v cargo)"
+    else
+        echo "Rust 1.99.1 is required. Install rustup and the toolchain from rust-toolchain.toml." >&2
+        exit 1
+    fi
+
+    export CARGO_TARGET_DIR="$PWD/.build/rust"
+    if [[ "$local_rust_toolchain" == true ]]; then
+        mkdir -p "$CARGO_TARGET_DIR/lint"
+        "$toolchain_bin/rustfmt" --edition 2024 --check rust/sweepdeck-accelerator/src/lib.rs
+        "$toolchain_bin/clippy-driver" --edition=2024 --crate-name sweepdeck_accelerator \
+            --crate-type lib --deny warnings --emit=metadata \
+            --out-dir "$CARGO_TARGET_DIR/lint" rust/sweepdeck-accelerator/src/lib.rs
+        "$toolchain_bin/clippy-driver" --edition=2024 --crate-name sweepdeck_accelerator \
+            --test --deny warnings --emit=metadata \
+            --out-dir "$CARGO_TARGET_DIR/lint" rust/sweepdeck-accelerator/src/lib.rs
+    else
+        "$cargo_command" fmt --manifest-path rust/sweepdeck-accelerator/Cargo.toml -- --check
+        "$cargo_command" clippy --manifest-path rust/sweepdeck-accelerator/Cargo.toml --all-targets --locked -- -D warnings
+    fi
+    if [[ "$command_name" == "test" ]]; then
+        "$cargo_command" test --manifest-path rust/sweepdeck-accelerator/Cargo.toml --locked
+    fi
+    "$cargo_command" build --manifest-path rust/sweepdeck-accelerator/Cargo.toml --release --locked
+fi
+
 frameworks="$(dirname "$toolchain_usr")/Library/Developer/Frameworks"
 if [[ "$command_name" == "test" && -d "$frameworks/Testing.framework" ]]; then
     extra_flags+=(--disable-xctest --enable-swift-testing --no-parallel -Xswiftc -F -Xswiftc "$frameworks" -Xlinker -rpath -Xlinker "$frameworks")

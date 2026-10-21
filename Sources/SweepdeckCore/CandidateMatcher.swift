@@ -41,17 +41,21 @@ public enum CandidateMatcher {
         }
         guard !Task.isCancelled else { return [:] }
 
-        filtered.sort { left, right in
-            switch sort {
-            case .size:
-                return left.size == right.size ? left.id < right.id : left.size > right.size
-            case .name:
-                let order = left.url.lastPathComponent.localizedStandardCompare(right.url.lastPathComponent)
-                return order == .orderedSame ? left.id < right.id : order == .orderedAscending
-            case .oldest:
-                let leftDate = left.file.metadata.modified
-                let rightDate = right.file.metadata.modified
-                return leftDate == rightDate ? left.id < right.id : leftDate < rightDate
+        if let rustSorted = RustCandidateSorter.sorted(filtered, by: sort) {
+            filtered = rustSorted
+        } else {
+            filtered.sort { left, right in
+                switch sort {
+                case .size:
+                    return left.size == right.size ? left.id < right.id : left.size > right.size
+                case .name:
+                    let order = left.url.lastPathComponent.localizedStandardCompare(right.url.lastPathComponent)
+                    return order == .orderedSame ? left.id < right.id : order == .orderedAscending
+                case .oldest:
+                    let leftDate = left.file.metadata.modified
+                    let rightDate = right.file.metadata.modified
+                    return leftDate == rightDate ? left.id < right.id : leftDate < rightDate
+                }
             }
         }
         guard !Task.isCancelled else { return [:] }
