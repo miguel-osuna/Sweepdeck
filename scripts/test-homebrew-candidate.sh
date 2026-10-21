@@ -74,6 +74,8 @@ cask "sweepdeck" do
   depends_on arch: :arm64
   depends_on macos: :sequoia
 
+  app "Sweepdeck.app"
+
   caveats <<~EOS
     macOS may show a security warning the first time you open Sweepdeck. This build
     has an ad-hoc signature, no Apple-issued Developer ID signature, and no
@@ -81,8 +83,6 @@ cask "sweepdeck" do
     in System Settings > Privacy & Security > Open Anyway. Homebrew leaves quarantine
     in place and the cask does not bypass Gatekeeper.
   EOS
-
-  app "Sweepdeck.app"
 end
 EOF
 
