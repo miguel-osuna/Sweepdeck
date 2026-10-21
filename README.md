@@ -79,11 +79,24 @@ The 0.2.0 release's [captured first-launch screen](https://github.com/miguel-osu
 shows the same warning. That check did not approve the app or verify a successful
 post-approval launch.
 
-If you decide to proceed, choose **Done**, then check **System Settings > Privacy &
-Security** for **Open Anyway** after the attempted launch. Read Apple's [security
-guidance](https://support.apple.com/en-au/102445) and continue only if you trust the
-app and its source. The tap cask does not bypass Gatekeeper. See
-[compatibility evidence](COMPATIBILITY.md) before installing.
+If you downloaded Sweepdeck from the official release or installed it from the tap,
+and you trust that source, macOS provides a one-time, per-app approval:
+
+1. Click **Done** in the warning. **Move to Trash** removes the app.
+2. Open **System Settings > Privacy & Security**, scroll to **Security**, and click
+   **Open Anyway** for Sweepdeck.
+3. When the warning appears again, click **Open** if you still want to run it.
+
+macOS saves this exception for Sweepdeck, so later launches work by double-clicking
+the app. This does not turn off Gatekeeper for other apps. Apple's [security
+guidance](https://support.apple.com/en-au/102445) explains the approval. A DMG would
+change how the app is copied into Applications, but it would not add an Apple-issued
+Developer ID signature or notarization ticket, so it would not remove this warning.
+Removing this malware-verification warning for all users requires Developer ID signing
+and notarization through the Apple Developer Program, currently USD 99 per year in the
+United States. macOS may still show its ordinary first-download confirmation.
+See [compatibility evidence](COMPATIBILITY.md) for the checks completed on this
+release.
 
 ## Build from source
 

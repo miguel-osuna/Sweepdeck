@@ -90,11 +90,26 @@ did not approve the app or verify a successful launch after approval. The releas
 workflow leaves quarantine intact, does not disable Gatekeeper, and does not scan
 personal folders.
 
-Users who choose to proceed can select **Done**, then check **System Settings >
-Privacy & Security** for **Open Anyway** after attempting to open the app. Read Apple's
-[security guidance](https://support.apple.com/en-au/102445) and continue only if the
-app and its source are trusted. The cask describes this approval step; it does not
-automate it. App Store submission and notarization are not cask-format requirements;
+Users who choose to proceed can select **Done**, open **System Settings > Privacy &
+Security**, scroll to **Security**, and click **Open Anyway** for Sweepdeck. After the
+warning appears again, they can click **Open** if they still trust the app and its
+source. Apple says this saves an exception for the app so future launches work
+normally. See Apple's [security guidance](https://support.apple.com/en-au/102445).
+The cask describes this approval step; it does not automate it. This is a local,
+per-app exception, not a global Gatekeeper setting.
+
+Changing the archive from ZIP to DMG can offer a familiar drag-to-Applications step,
+but it does not establish the developer's identity or provide a notarization ticket.
+It therefore does not resolve this Gatekeeper warning. To avoid this
+malware-verification block and the **Open Anyway** exception workflow, the release
+must be signed with an Apple Developer ID and notarized. macOS may still ask users to
+confirm opening a downloaded app the first time. Apple requires an Apple Developer
+Program Account Holder to create a Developer ID certificate. The program currently
+costs USD 99 per year in the United States (regional pricing and limited organization
+fee waivers may differ; see Apple's [membership
+terms](https://developer.apple.com/help/account/membership/program-enrollment)). The
+current no-cost release path keeps quarantine enabled and documents the one-time user
+approval. App Store submission and notarization are not cask-format requirements;
 they remain Gatekeeper compatibility decisions.
 
 The official Homebrew cask was not pursued. Its [acceptance policy](https://docs.brew.sh/Acceptable-Casks)
