@@ -4,11 +4,12 @@ Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
 Command Line Tools but no active full Xcode installation. A previous full local
 run passed 43 Swift tests, measured 581/680 executable `SweepdeckCore` lines
 (85.4%) and built and verified the release bundle. The current feature-branch run
-[#39551995676](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39551995676)
+[#39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011)
 passed all 47 tests, measured 693/794 executable lines (87.3%), and built the app
-on Swift 6.2/macOS 15, Swift 6.4.1/macOS 26 and Xcode 27 preview/macOS 27. The
-earlier macOS 15 test-host signal-11 flake on run #92 was followed by successful
-targeted and full runs. Interactive UI behavior was not checked on any CI runner.
+on Swift 6.2/macOS 15, Swift 6.4.1/macOS 26 and Xcode 27 preview/macOS 27. It
+also verified Swift cache relocation on all three lanes. The earlier macOS 15
+test-host signal-11 flake on run #92 was followed by successful targeted and full
+runs. Interactive UI behavior was not checked on any CI runner.
 
 ## Automated checks
 
@@ -40,7 +41,7 @@ targeted and full runs. Interactive UI behavior was not checked on any CI runner
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
 - GitHub Actions run
-  [#39551995676](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39551995676)
+  [#39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011)
   passed all 47 tests, the 80% `SweepdeckCore` line-coverage floor and release
   build with Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`, and Xcode 27
   preview on macOS 27. The run measured 87.3% core line coverage. These checks do
@@ -162,12 +163,15 @@ the end-to-end test, and Trash was not emptied.
   A Swift or Rust sort already in progress cannot be interrupted, but its result
   is discarded if the search task was cancelled; the bounded 25,000-record scan
   cap limits that work.
-- An opt-in benchmark on this host sorted 3,000 synthetic ASCII candidates by
-  size in a median 8.52 ms through the Rust FFI path versus 36.95 ms with Swift
-  `Array.sorted` (11 samples, including Rust-side row/path marshaling and result
-  remapping). This is an isolated sort measurement on one machine, not a scan,
-  filtering, or end-to-end UI benchmark; rerun it on other hardware before making
-  broader performance claims.
+- The Rust static archive is built without LTO so Xcode 26.0.1's linker can
+  consume its native object files. Its `no_std` panic and exception-personality
+  handlers abort rather than unwind across the C ABI. After this compatibility
+  change, an opt-in benchmark on this host sorted 3,000 synthetic ASCII
+  candidates by size in a median 8.70 ms through the Rust FFI path versus 36.89
+  ms with Swift `Array.sorted` (11 samples, including Rust-side row/path
+  marshaling and result remapping). This is an isolated sort measurement on one
+  machine, not a scan, filtering, or end-to-end UI benchmark; rerun it on other
+  hardware before making broader performance claims.
 - Disk Explorer aggregation previously filtered, grouped and sorted the full scan
   synchronously while SwiftUI evaluated the view. It now runs in nonisolated async
   core work, checks cancellation, and shows progress while hiding results for old
