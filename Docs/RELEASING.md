@@ -25,12 +25,51 @@ not publish an npm package.
 
 ## Distribution status
 
-The current workflow publishes GitHub release notes and source archives. The candidate
-app is an Actions artifact for manual QA; it is not attached to the public release.
-Local app builds are ad-hoc signed and are not notarized. Do not advertise the current
-archive as a one-click public installer or create a Homebrew cask until Developer ID
-signing, hardened runtime, notarization, stapling and installation checks are automated
-and verified on supported macOS releases and Apple Silicon.
+The release workflow builds `Sweepdeck-<version>-macOS.zip` and a neighboring
+`.sha256` file from the version proposed by semantic-release. It verifies the checksum,
+retains both files in the seven-day candidate artifact, then reuses those exact files
+after the protected publish job creates the tag and GitHub Release. The app ZIP is a
+minimal app bundle; it does not contain a separate installer or support files.
+
+Before publication, the candidate job runs the cask through Homebrew audit and style,
+installs and uninstalls it on the `macos-15` Apple Silicon runner, checks the installed
+bundle and Homebrew quarantine, runs `spctl`, and attempts a first launch with
+`SWEEPDECK_STATE_DIR` pointed at temporary state. The test never removes quarantine,
+disables Gatekeeper, scans personal folders, or adds cask lifecycle scripts. A failed
+Gatekeeper or launch check fails the candidate job and prevents the protected publish
+job from running. The public tap's pull-request workflow will repeat audit, style,
+install, uninstall and first-launch checks against the actual versioned GitHub Release
+URL before a cask update can merge.
+
+The cask belongs in the owner-managed public repository
+[`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
+`Casks/sweepdeck.rb`. The primary command is
+`brew install --cask miguel-osuna/tap/sweepdeck`. Homebrew trusts only that fully
+qualified cask for this command. To use the short command, users must run
+`brew tap miguel-osuna/tap`, then
+`brew trust --cask miguel-osuna/tap/sweepdeck`, then
+`brew install --cask sweepdeck`. A fresh Homebrew setup cannot use the short command
+without those steps or inclusion in an official tap.
+
+The cask installs only `Sweepdeck.app`; it has no `zap` stanza or cleanup scripts, so
+uninstall leaves preferences and history intact. Cask version updates are manual and
+reviewed: after each app release, verify the published `.sha256`, update the cask's
+version and checksum while keeping its versioned release URL pattern, and open a PR in
+`homebrew-tap`. The tap's disposable macOS CI must pass `brew audit --cask --strict`,
+`brew style --cask`, install, first launch under quarantine, and uninstall before that
+PR is merged. No cross-repository Actions token is required for this manual process.
+
+Neither App Store submission nor notarization is required by the cask format. They
+remain Gatekeeper compatibility decisions: the current app build is ad-hoc signed and
+has not yet been tested through Homebrew quarantine on a disposable Apple Silicon Mac.
+Do not mark the release ready or publish the cask until the candidate test passes. If
+Gatekeeper blocks first launch, stop and ask whether to add Developer ID signing and
+notarization. Never remove quarantine or bypass macOS security controls.
+
+At the 2026-10-21 eligibility check, the canonical Sweepdeck GitHub repository had 0
+stars, forks, and watchers and was one day old. That is below Homebrew's normal public
+notability thresholds for a self-submitted official cask. No official-cask PR is being
+prepared; this does not prevent distribution through the owner-maintained tap.
 
 ## Dependencies and security
 

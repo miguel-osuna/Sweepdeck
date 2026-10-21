@@ -22,6 +22,34 @@ open dist/Sweepdeck.app
 The build creates a locally ad-hoc signed app. No developer identity or provisioning
 profile is needed. This is not a notarized public distribution build.
 
+## Homebrew distribution
+
+The planned install command is:
+
+```sh
+brew install --cask miguel-osuna/tap/sweepdeck
+```
+
+The first versioned release and tap cask are pending release validation and review,
+so this command is not available yet. Once published, the fully qualified command
+will select and trust only `miguel-osuna/tap/sweepdeck`; it will not trust every
+current or future item in the tap.
+
+To install by the short name instead, users must first tap the repository and trust
+this cask explicitly:
+
+```sh
+brew tap miguel-osuna/tap
+brew trust --cask miguel-osuna/tap/sweepdeck
+brew install --cask sweepdeck
+```
+
+The cask installs `Sweepdeck.app` only. Uninstall removes the app bundle and leaves
+Sweepdeck preferences and history in place; the cask has no `zap` stanza. App Store
+submission and notarization are not cask-format requirements. The app still must
+pass macOS Gatekeeper with Homebrew quarantine enabled; that launch check is part of
+release readiness and has not yet been completed for a public release candidate.
+
 On a healthy Xcode installation, `swift test` and `swift build -c release` also work.
 The wrapper keeps caches inside `.build` and handles two detected remnants of
 incomplete Command Line Tools upgrades without modifying installed tools. See

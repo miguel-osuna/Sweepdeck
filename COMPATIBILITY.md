@@ -12,6 +12,36 @@ Observed local toolchain: Swift 6.2 (`swiftlang-6.2.0.19.9`), macOS SDK 26.0,
 Command Line Tools selected. No active full Xcode and no signing identities.
 Use ad-hoc local signing. No App Store membership needed.
 
+## Homebrew distribution evidence
+
+The intended distribution is an owner-managed public tap at
+`github.com/miguel-osuna/homebrew-tap`, using a versioned GitHub Release ZIP and its
+SHA-256 checksum. The target install command is
+`brew install --cask miguel-osuna/tap/sweepdeck`. Homebrew's fully qualified install
+trusts that cask only. A short-name install requires `brew tap miguel-osuna/tap`,
+`brew trust --cask miguel-osuna/tap/sweepdeck`, then
+`brew install --cask sweepdeck`.
+
+As of 2026-10-21, the public tap and first app release are not yet published. The
+current release build is ad-hoc signed, and no Homebrew-quarantined first launch has
+been verified on a disposable Apple Silicon Mac. Release workflow validation is
+being added for a versioned candidate on a disposable macOS 15 Apple Silicon runner;
+the test will inspect the installed bundle, run Homebrew audit/style/install/uninstall,
+preserve quarantine, assess Gatekeeper, and attempt first launch with isolated app
+state. None of those new distribution checks is recorded as passed yet.
+
+App Store submission is not required by the cask format, and notarization is not a
+cask-format requirement. Homebrew's current macOS policy does require executable
+cask artifacts to pass its Gatekeeper checks. If the quarantined candidate fails,
+release readiness remains closed until a signing/notarization decision is made; no
+quarantine removal, Gatekeeper override, or cask-script bypass is acceptable.
+
+Official `homebrew/cask` inclusion is not being submitted. At the time of review,
+the canonical Sweepdeck repository was one day old with 0 stars, forks, and watchers.
+Homebrew's current policy normally requires at least 30 forks or watchers or 75 stars,
+with higher thresholds for self-submissions, and a repository under 30 days old is
+normally ineligible. Those criteria do not restrict owner-maintained third-party taps.
+
 The package keeps Swift tools version 6.2 as its minimum. CI exercises the
 latest stable Swift.org toolchain (6.4.1) on macOS 26 and a separate Swift 6.4 /
 Xcode 27 preview lane, without raising the minimum developer toolchain. The

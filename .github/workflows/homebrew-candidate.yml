@@ -1,0 +1,38 @@
+name: Homebrew release-candidate smoke
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/homebrew-candidate.yml"
+      - ".github/workflows/release.yml"
+      - "scripts/build-app.sh"
+      - "scripts/test-homebrew-candidate.sh"
+permissions:
+  contents: read
+jobs:
+  macos:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require a disposable Apple Silicon runner
+        run: test "$(uname -m)" = arm64
+      - name: Select installed Swift 6.2 Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          for app in /Applications/Xcode*.app; do
+            export DEVELOPER_DIR="$app/Contents/Developer"
+            if xcrun swift --version | grep -q 'Swift version 6.2'; then
+              echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
+          exit 1
+      - name: Build the first-release-format archive
+        env:
+          SWEEPDECK_VERSION: 0.1.0
+          SWEEPDECK_BUILD_STAGE: ${{ runner.temp }}/SweepdeckBuild-stage
+        run: bash scripts/build-app.sh
+      - name: Validate Homebrew install, quarantine, first launch, and uninstall
+        run: bash scripts/test-homebrew-candidate.sh 0.1.0 dist/Sweepdeck-0.1.0-macOS.zip
