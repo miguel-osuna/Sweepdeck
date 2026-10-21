@@ -114,7 +114,7 @@ if [[ "$command_name" == "test" ]]; then
         for test_target in "${test_targets[@]}"; do
             echo "Running $test_target in an isolated Swift Testing process." >&2
             swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
-                "${extra_flags[@]}" --filter "$test_target" "$@"
+                ${extra_flags[@]+"${extra_flags[@]}"} --filter "$test_target" "$@"
         done
         exit 0
     fi
