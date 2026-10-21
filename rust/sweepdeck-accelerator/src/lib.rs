@@ -15,6 +15,15 @@ fn panic_handler(_: &core::panic::PanicInfo<'_>) -> ! {
     unsafe { abort() }
 }
 
+#[cfg(not(test))]
+#[unsafe(no_mangle)]
+pub extern "C" fn rust_eh_personality() -> ! {
+    // The static archive includes core objects that reference this symbol even
+    // with panic=abort. Rust panics and foreign exceptions must not unwind
+    // through this C ABI boundary.
+    unsafe { abort() }
+}
+
 #[repr(C)]
 pub struct SortRow {
     pub value: i64,
