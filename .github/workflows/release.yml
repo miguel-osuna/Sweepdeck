@@ -61,6 +61,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Select installed Swift 6.2 Xcode
+        shell: bash
+        run: |
+          for app in /Applications/Xcode*.app; do
+            export DEVELOPER_DIR="$app/Contents/Developer"
+            if xcrun swift --version | grep -q 'Swift version 6.2'; then
+              echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
+          exit 1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
