@@ -27,9 +27,9 @@ The owner tap's default branch had no `Casks/sweepdeck.rb`; its open PR contains
 validation workflow and product-neutral repository description. Token availability
 does not make an unpublished install command usable.
 
-The latest successful candidate check, [Actions run 39640681352](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39640681352),
+The 0.1.0 candidate check, [Actions run 39642233429](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39642233429),
 built the release-shaped 0.1.0 archive and verified its sidecar SHA-256
-(`9b65ff9ce68a5a5dd7117c754feaa82c4053c10ba4da4aef1840c5289b9c3389`). On the
+(`9741ddc4482f240704113b93d8d51e031a28d343fd8f1f44cc101bf6a694b269`). On the
 disposable macOS 26 Apple Silicon runner, Homebrew strict audit and style passed;
 install, bundle/version inspection, quarantine inspection, and uninstall also passed.
 The installed artifact was only `Sweepdeck.app`; its executable was arm64 and the
