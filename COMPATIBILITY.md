@@ -101,19 +101,31 @@ organization fee waivers (see [membership
 terms](https://developer.apple.com/help/account/membership/program-enrollment)).
 macOS may still ask users to confirm opening a downloaded app the first time.
 
-The 0.2.0 release has only a ZIP. PR [#14](https://github.com/miguel-osuna/Sweepdeck/pull/14)
-adds an optional DMG to future releases. Its disposable macOS 26 Apple Silicon
-candidate smoke passed in [run 39684825389](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39684825389):
-the test built a version-0.1.0-format candidate from the PR, verified the DMG checksum
-and image, mounted it read-only, and checked the app version, code signature, icon,
-Applications shortcut, and install guide. It did not download the DMG or test its
-quarantine/first-launch behavior.
+Version [0.3.0](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.3.0) is the
+first release with both the app-only ZIP and optional drag-to-Applications DMG. The
+complete [release run 39686586148](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39686586148)
+passed main verification, candidate packaging, disposable DMG inspection, Homebrew
+checks, and publication. The ZIP and DMG plus both public SHA-256 sidecars were
+independently downloaded and verified. ZIP SHA-256:
+`ba4c944c4a128a508465b0c7659c60359220c1585da7f6c0f89c4072141ccf6e`; DMG SHA-256:
+`62e81604c21fe34be3900a1753a9ee6cfb55591edfb0fba70eb486f5d41853c4`.
 
-The same run passed Homebrew audit, style, install, quarantine inspection, and
-uninstall against the candidate ZIP. Gatekeeper rejected the ad-hoc signed app with
-status 3; Launch Services timed out after 15 seconds and no app process was observed.
-The check did not simulate user approval or remove quarantine. It validates the
-packaging workflow, not successful post-approval app launch.
+The release workflow's disposable Apple Silicon check verified the DMG checksum,
+read-only image mount, app version/signature/icon, Applications shortcut, and
+`INSTALL.txt`. It did not download the public DMG, simulate its quarantine state, or
+verify the DMG route's first launch. The exact candidate ZIP passed Homebrew audit,
+style, install, bundle/version/quarantine inspection, Gatekeeper reporting, and
+uninstall. Its ad-hoc signed app remained quarantined; Gatekeeper rejected unattended
+launch with status 3, Launch Services timed out after 15 seconds (status 124), and no
+app process was observed. The workflow did not simulate user approval or claim a
+successful post-approval launch.
+
+The tap's [PR #3](https://github.com/miguel-osuna/homebrew-tap/pull/3) clarified the
+one-time approval instructions. [Tap PR #4](https://github.com/miguel-osuna/homebrew-tap/pull/4) updated the cask
+to 0.3.0 with the verified ZIP checksum after its disposable macOS checks passed in
+[tap run 39687605169](https://github.com/miguel-osuna/homebrew-tap/actions/runs/39687605169).
+The run passed strict audit, style, install, installed-bundle/quarantine inspection,
+Gatekeeper reporting, and uninstall.
 
 ## Local workspace
 

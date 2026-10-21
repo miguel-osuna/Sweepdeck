@@ -16,14 +16,14 @@ job uses the protected environment and pauses for reviewer approval before creat
 the tag and GitHub Release. If there is no release-worthy commit, it exits without
 publishing.
 
-Starting with the next published version, the workflow also packages a direct-download
-DMG from the tested ZIP and writes a separate SHA-256 sidecar. The disposable Apple
-Silicon candidate job verifies both checksums, mounts the DMG read-only, and checks the
-app version, signature, icon, Applications shortcut, and `INSTALL.txt`. It does not
-simulate a downloaded DMG's quarantine state or verify a post-approval launch; the
-Homebrew ZIP check remains the first-launch Gatekeeper evidence. The publish job
-attaches the ZIP, ZIP checksum, DMG, and DMG checksum only after candidate checks pass
-and the required release reviewer approves.
+Starting with 0.3.0, the workflow packages a direct-download DMG from the tested ZIP
+and writes a separate SHA-256 sidecar. The disposable Apple Silicon candidate job
+verifies both checksums, mounts the DMG read-only, and checks the app version, signature,
+icon, Applications shortcut, and `INSTALL.txt`. It does not simulate a downloaded
+DMG's quarantine state or verify a post-approval launch; the Homebrew ZIP check remains
+the first-launch Gatekeeper evidence. The publish job attaches the ZIP, ZIP checksum,
+DMG, and DMG checksum only after candidate checks pass and the required release reviewer
+approves.
 
 The first publish creates and validates the `v0.0.0` analysis baseline at the
 repository's root commit, then requires semantic-release to propose exactly `0.1.0`.
@@ -49,11 +49,24 @@ were independently downloaded and verified against the same SHA-256:
 The first-launch screen showed the Gatekeeper malware-verification warning; the check
 did not approve the app or verify a successful post-approval launch.
 
-The 0.2.0 release contains only the app ZIP and its checksum. The DMG is an optional
-direct-download format; the cask continues to use the app-only ZIP. The DMG will
-contain the same app, an Applications shortcut, and `INSTALL.txt` with manual install
+The 0.2.0 release contains only the app ZIP and its checksum. Version 0.3.0 adds the
+optional direct-download DMG; Homebrew continues to use the app-only ZIP. The DMG
+contains the same app, an Applications shortcut, and `INSTALL.txt` with manual install
 and Gatekeeper instructions. It improves drag-to-Applications setup but does not add
 signing or notarization or remove the first-launch approval.
+
+Version [0.3.0](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.3.0) was
+published from `main` after the protected release approval. The complete
+[release run 39686586148](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39686586148)
+passed the macOS/Swift matrix, versioned candidate build, DMG packaging and inspection,
+Homebrew checks, and asset publication. The public ZIP and DMG and both sidecars were
+downloaded and independently verified. ZIP SHA-256:
+`ba4c944c4a128a508465b0c7659c60359220c1585da7f6c0f89c4072141ccf6e`; DMG SHA-256:
+`62e81604c21fe34be3900a1753a9ee6cfb55591edfb0fba70eb486f5d41853c4`.
+The disposable DMG check read-only mounted and inspected the image; it did not download
+the public DMG or test its quarantine/first-launch behavior. The Homebrew ZIP check
+kept quarantine and Gatekeeper enabled; Gatekeeper rejected unattended first launch,
+and no approval or post-approval launch was simulated.
 
 ## Homebrew distribution
 
@@ -64,7 +77,14 @@ workflow and a product-neutral repository description. Tap PR
 against the public 0.2.0 assets after its disposable macOS validation passed in
 [tap run 39676510862](https://github.com/miguel-osuna/homebrew-tap/actions/runs/39676510862).
 That run passed strict audit, style, install, quarantine and bundle inspection,
-Gatekeeper/first-launch reporting, and uninstall.
+Gatekeeper/first-launch reporting, and uninstall. Tap PR
+[#3](https://github.com/miguel-osuna/homebrew-tap/pull/3) clarified the one-time
+user approval steps. Tap PR
+[#4](https://github.com/miguel-osuna/homebrew-tap/pull/4) updated the cask to 0.3.0
+with the verified ZIP checksum after its disposable macOS checks passed in
+[tap run 39687605169](https://github.com/miguel-osuna/homebrew-tap/actions/runs/39687605169).
+That run passed strict audit, style, install, installed-bundle and quarantine inspection,
+Gatekeeper reporting, and uninstall.
 
 The primary install command is:
 
