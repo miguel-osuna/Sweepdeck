@@ -20,7 +20,9 @@ public struct Metadata: Codable, Hashable, Sendable {
     public let changedNanos: Int64
     public let links: UInt16
     public let flags: UInt32
-    public var modified: Date { Date(timeIntervalSince1970: Double(modifiedSeconds)) }
+    public var modified: Date {
+        Date(timeIntervalSince1970: Double(modifiedSeconds) + Double(modifiedNanos) / 1_000_000_000)
+    }
     public var isDirectory: Bool { identity.mode & 0o170000 == 0o040000 }
     public var isRegular: Bool { identity.mode & 0o170000 == 0o100000 }
     public var isSymlink: Bool { identity.mode & 0o170000 == 0o120000 }
@@ -59,6 +61,13 @@ public enum RuleID: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 }
+public enum AppearanceMode: String, CaseIterable, Identifiable, Sendable {
+    case system = "System"
+    case light = "Light"
+    case dark = "Dark"
+
+    public var id: String { rawValue }
+}
 public struct Preferences: Codable, Equatable, Sendable {
     public var roots: [AuthorizedRoot] = []
     public var excludedPaths: [String] = []
@@ -67,6 +76,10 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var minimumLargeMB: Int = 500
     public var appearance: String = "System"
     public init() {}
+    public var appearanceMode: AppearanceMode {
+        get { AppearanceMode(rawValue: appearance) ?? .system }
+        set { appearance = newValue.rawValue }
+    }
     public var boundedAgeDays: Int { min(3650, max(1, ageDays)) }
     public var largeBytes: Int64 { Int64(min(1_000_000, max(1, minimumLargeMB))) * 1_000_000 }
     public func excludes(_ url: URL) -> Bool { excludedPaths.contains { PathPolicy.contains(url.path, in: $0) } }

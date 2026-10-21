@@ -1,0 +1,4 @@
+module SweepdeckRust [system] {
+    header "SweepdeckRust.h"
+    export *
+}

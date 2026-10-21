@@ -40,6 +40,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test release version metadata
         run: bash scripts/test-app-version.sh
+      - name: Test coverage gate
+        run: python3 scripts/test-core-coverage.py
+      - name: Test Swift build cache relocation
+        run: bash scripts/test-swift-build-cache.sh
       - name: Select installed Swift 6.2 Xcode
         shell: bash
         run: |
@@ -52,7 +56,12 @@ jobs:
           done
           echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
           exit 1
-      - run: bash scripts/swift.sh test
+      - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Enforce SweepdeckCore line coverage floor
+        run: |
+          coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
+          test -n "$coverage_json"
+          python3 scripts/check_core_coverage.py "$coverage_json" 80
       - run: bash scripts/build-app.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -65,6 +74,12 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test release version metadata
+        run: bash scripts/test-app-version.sh
+      - name: Test coverage gate
+        run: python3 scripts/test-core-coverage.py
+      - name: Test Swift build cache relocation
+        run: bash scripts/test-swift-build-cache.sh
       - name: Install Swift 6.4.1 toolchain
         shell: bash
         run: |
@@ -79,7 +94,31 @@ jobs:
           echo "TOOLCHAINS=$toolchain_id" >> "$GITHUB_ENV"
           echo "$toolchain/usr/bin" >> "$GITHUB_PATH"
           "$toolchain/usr/bin/swift" --version
+      - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Enforce SweepdeckCore line coverage floor
+        run: |
+          coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
+          test -n "$coverage_json"
+          python3 scripts/check_core_coverage.py "$coverage_json" 80
+      - run: bash scripts/build-app.sh
+
+  latest-macos:
+    name: macOS 27 / Xcode 27 preview
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Report platform toolchain
+        run: sw_vers && xcodebuild -version && swift --version
       - name: Test release version metadata
         run: bash scripts/test-app-version.sh
-      - run: bash scripts/swift.sh test
+      - name: Test coverage gate
+        run: python3 scripts/test-core-coverage.py
+      - name: Test Swift build cache relocation
+        run: bash scripts/test-swift-build-cache.sh
+      - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Enforce SweepdeckCore line coverage floor
+        run: |
+          coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
+          test -n "$coverage_json"
+          python3 scripts/check_core_coverage.py "$coverage_json" 80
       - run: bash scripts/build-app.sh

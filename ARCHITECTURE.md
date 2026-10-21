@@ -28,9 +28,10 @@ policy snapshots are immutable during operations; the UI disables relevant edits
   `TrashService`. Production adapter only uses coordinated macOS Trash.
 - CleanupView sends query/category filtering and sorting to async SweepdeckCore
   work away from the UI actor, reports batched matching progress, discards stale
-  task results, and initially renders 100 rows per group. “Show next” pages
-  preserve access to every match without materializing thousands of SwiftUI row
-  views at once.
+  task results, and renders fixed 100-row pages. Disk Explorer, cleanup
+  confirmation, operation results, and long Settings root/exclusion lists use
+  the same bounded page contract. Previous/next navigation preserves access to
+  every result without growing the SwiftUI view tree as users browse.
 - Persistence.swift: versioned atomic JSON, local restricted file permissions,
   no silent recovery from malformed data, bounded operation history.
 - Metrics.swift: public Mach, sysctl, URL volume and ProcessInfo adapters.

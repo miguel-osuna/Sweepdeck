@@ -9,7 +9,7 @@ struct CleanupView: View {
     @State private var matchingRequestID = UUID()
     @State private var matchesByRule: [RuleID: [Candidate]] = [:]
     @State private var matchedSearchKey: CleanupSearchKey?
-    @State private var visibleCounts: [RuleID: Int] = [:]
+    @State private var pageIndexes: [RuleID: Int] = [:]
 
     private var searchKey: CleanupSearchKey {
         CleanupSearchKey(query: query, category: model.category, sort: sort, scanStarted: model.report?.started)
@@ -54,16 +54,11 @@ struct CleanupView: View {
                             ForEach(RuleID.allCases) { rule in
                                 let matches = matchesByRule[rule] ?? []
                                 if !matches.isEmpty {
-                                    let visibleCount = min(matches.count, visibleCounts[rule] ?? 100)
-                                    let visibleMatches = matches.prefix(visibleCount)
+                                    let page = ResultPage(pageIndex: pageIndexes[rule] ?? 0, pageSize: 100, itemCount: matches.count)
+                                    let visibleMatches = matches[page.range]
                                     DisclosureGroup {
                                         ForEach(visibleMatches) { candidate in CandidateRow(model: model, candidate: candidate) }
-                                        if visibleMatches.count < matches.count {
-                                            let remaining = matches.count - visibleMatches.count
-                                            Button("Show next \(min(100, remaining)) (\(remaining) remaining)") {
-                                                visibleCounts[rule] = min(matches.count, visibleCount + 100)
-                                            }.buttonStyle(.borderless).font(.caption).foregroundStyle(.secondary)
-                                        }
+                                        ResultPageFooter(page: page, itemLabel: "files") { pageIndexes[rule] = $0 }
                                     } label: {
                                         HStack {
                                             Label(rule.title, systemImage: rule.symbol).font(.headline)
@@ -117,7 +112,7 @@ struct CleanupView: View {
             )
             guard !Task.isCancelled, requestID == matchingRequestID else { return }
             matchesByRule = result
-            visibleCounts = [:]
+            pageIndexes = [:]
             matchingProgress = nil
             matchedSearchKey = key
         }
@@ -174,20 +169,40 @@ struct ConfirmationView: View {
     @ObservedObject var model: AppModel
     let plan: CleanupPlan
     @State private var acknowledged = false
+    @State private var readyPageIndex = 0
+    @State private var rejectedPageIndex = 0
+
+    private var readyPage: ResultPage {
+        ResultPage(pageIndex: readyPageIndex, pageSize: 100, itemCount: plan.ready.count)
+    }
+
+    private var rejectedPage: ResultPage {
+        ResultPage(pageIndex: rejectedPageIndex, pageSize: 100, itemCount: plan.rejected.count)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             PageTitle(title: "Review before moving", subtitle: "Dry run complete. No files have been changed.")
             notice("\(plan.ready.count) files · \(bytes(plan.bytes)) estimated. Files will be moved to Trash, not permanently deleted. Disk space may not increase until you empty Trash yourself.")
             List {
-                ForEach(plan.ready) { candidate in
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack { Text(candidate.url.lastPathComponent).fontWeight(.medium); Spacer(); Text(bytes(candidate.size)) }
-                        Text(candidate.id).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                        Text("Review Required · Move to Trash").font(.caption).foregroundStyle(.orange)
+                Section("Ready to move · \(plan.ready.count)") {
+                    if plan.ready.isEmpty { Text("No files are ready to move.").foregroundStyle(.secondary) }
+                    ForEach(plan.ready[readyPage.range]) { candidate in
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack { Text(candidate.url.lastPathComponent).fontWeight(.medium); Spacer(); Text(bytes(candidate.size)) }
+                            Text(candidate.id).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                            Text("Review Required · Move to Trash").font(.caption).foregroundStyle(.orange)
+                        }
                     }
+                    ResultPageFooter(page: readyPage, itemLabel: "ready files") { readyPageIndex = $0 }
                 }
-                ForEach(plan.rejected) { item in
-                    VStack(alignment: .leading) { Text(item.path).font(.caption); Text("Rejected: \(item.message)").foregroundStyle(.orange) }
+                if !plan.rejected.isEmpty {
+                    Section("Not eligible · \(plan.rejected.count)") {
+                        ForEach(plan.rejected[rejectedPage.range]) { item in
+                            VStack(alignment: .leading) { Text(item.path).font(.caption); Text("Rejected: \(item.message)").foregroundStyle(.orange) }
+                        }
+                        ResultPageFooter(page: rejectedPage, itemLabel: "rejected items") { rejectedPageIndex = $0 }
+                    }
                 }
             }.frame(minHeight: 230)
             Toggle("I reviewed these files and want to move them to Trash.", isOn: $acknowledged)
@@ -205,16 +220,23 @@ struct ConfirmationView: View {
 struct OperationView: View {
     @ObservedObject var model: AppModel
     let operation: OperationRecord
+    @State private var pageIndex = 0
+
+    private var page: ResultPage {
+        ResultPage(pageIndex: pageIndex, pageSize: 100, itemCount: operation.items.count)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             PageTitle(title: "Operation results", subtitle: "\(operation.items.filter { $0.status == .trashed }.count) files moved to Trash. Review every result below.")
-            List(operation.items) { item in
+            List(operation.items[page.range]) { item in
                 VStack(alignment: .leading, spacing: 5) {
                     Text(item.path).textSelection(.enabled)
                     Text("\(item.status.rawValue.capitalized): \(item.message)").font(.caption).foregroundStyle(item.status == .trashed ? Color.secondary : Color.orange)
                     if let path = item.trashPath { Button("Reveal in Trash") { model.reveal(URL(fileURLWithPath: path)) }.buttonStyle(.borderless) }
                 }
             }
+            ResultPageFooter(page: page, itemLabel: "results") { pageIndex = $0 }
             notice("To restore a file, open Trash in Finder and move it back. Sweepdeck never empties Trash. History retains up to 1,000 recent item results.")
             HStack { Button("Open Trash") { model.revealTrash() }; Spacer(); Button("Done") { model.lastOperation = nil }.keyboardShortcut(.defaultAction) }
         }.padding(26).frame(width: 750, height: 570)

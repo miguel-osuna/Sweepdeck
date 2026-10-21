@@ -18,9 +18,15 @@ private struct CandidateMatcherFixture {
         ancestors = try fileSystem.ancestors(of: seedURL)
     }
 
-    func candidate(_ name: String, size: Int64, modified: Int64, rule: RuleID) -> Candidate {
+    func candidate(
+        _ name: String,
+        size: Int64,
+        modified: Int64,
+        modifiedNanos: Int64 = 0,
+        rule: RuleID
+    ) -> Candidate {
         let metadata = Metadata(identity: seed.identity, size: size, allocated: size,
-                                modifiedSeconds: modified, modifiedNanos: 0,
+                                modifiedSeconds: modified, modifiedNanos: modifiedNanos,
                                 changedSeconds: modified, changedNanos: 0,
                                 links: 1, flags: 0)
         let url = root.url.appendingPathComponent(name)
@@ -124,6 +130,100 @@ struct CandidateMatcherTests {
         #expect(result[.installers, default: []].map(\.url.lastPathComponent) == ["Older.dmg", "Newer.dmg"])
     }
 
+    @Test func oldestFallbackUsesSubsecondModificationTime() async throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let candidates = [
+            fixture.candidate("z-older.dmg", size: 10, modified: 100, modifiedNanos: 100_000_000, rule: .installers),
+            fixture.candidate("a-newer.dmg", size: 20, modified: 100, modifiedNanos: 200_000_000, rule: .installers)
+        ]
+
+        let result = await CandidateMatcher.match(candidates: candidates, query: "", category: nil, sort: .oldest)
+
+        #expect(result[.installers, default: []].map(\.url.lastPathComponent) == ["z-older.dmg", "a-newer.dmg"])
+    }
+
+    @Test func rustBatchSortMatchesSwiftReferenceForLargeASCIIResults() throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        var candidates: [Candidate] = []
+        candidates.reserveCapacity(3_000)
+        for index in 0..<3_000 {
+            let size = Int64((index * 7_919) % 257)
+            let modifiedSeconds = Int64(index % 101)
+            let modifiedNanos = Int64((index * 37) % 1_000_000_000)
+            let rule: RuleID = index.isMultiple(of: 2) ? .installers : .oldDownloads
+            candidates.append(fixture.candidate(
+                "item-\(index).dmg",
+                size: size,
+                modified: modifiedSeconds,
+                modifiedNanos: modifiedNanos,
+                rule: rule
+            ))
+        }
+
+        let expectedBySize: [Candidate] = candidates.sorted { (left: Candidate, right: Candidate) in
+            left.size == right.size ? left.id < right.id : left.size > right.size
+        }
+        let expectedByAge: [Candidate] = candidates.sorted { (left: Candidate, right: Candidate) in
+            let leftMetadata = left.file.metadata
+            let rightMetadata = right.file.metadata
+            if leftMetadata.modifiedSeconds != rightMetadata.modifiedSeconds {
+                return leftMetadata.modifiedSeconds < rightMetadata.modifiedSeconds
+            }
+            if leftMetadata.modifiedNanos != rightMetadata.modifiedNanos {
+                return leftMetadata.modifiedNanos < rightMetadata.modifiedNanos
+            }
+            return left.id < right.id
+        }
+        let actualBySize = RustCandidateSorter.sorted(candidates, by: .size)
+        let actualByAge = RustCandidateSorter.sorted(candidates, by: .oldest)
+
+        #expect(actualBySize?.map(\.id) == expectedBySize.map(\.id))
+        #expect(actualByAge?.map(\.id) == expectedByAge.map(\.id))
+
+        if ProcessInfo.processInfo.environment["SWEEPDECK_PERF_BENCHMARK"] == "1" {
+            let rustMedian = medianNanoseconds(repeating: 11) {
+                _ = RustCandidateSorter.sorted(candidates, by: .size)
+            }
+            let swiftMedian = medianNanoseconds(repeating: 11) {
+                _ = candidates.sorted { left, right in
+                    left.size == right.size ? left.id < right.id : left.size > right.size
+                }
+            }
+            print("3,000 candidate size sort median: Rust FFI \(rustMedian) ns; Swift \(swiftMedian) ns")
+        }
+    }
+
+    @Test func rustBatchSortFallsBackForNonASCIIPaths() throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let candidates = (0..<RustCandidateSorter.minimumBatchSize).map { index in
+            fixture.candidate("item-\(index).dmg", size: Int64(index), modified: Int64(index), rule: .installers)
+        } + [fixture.candidate("café.dmg", size: 10_000, modified: 1, rule: .installers)]
+
+        #expect(RustCandidateSorter.sorted(candidates, by: .size) == nil)
+    }
+
+    @Test func rustSorterUsesBatchThresholdAndFallsBackForNameSort() throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let belowThreshold = (0..<(RustCandidateSorter.minimumBatchSize - 1)).map { index in
+            fixture.candidate("below-\(index).dmg", size: Int64(index), modified: Int64(index), rule: .installers)
+        }
+        let atThreshold = (0..<RustCandidateSorter.minimumBatchSize).map { index in
+            fixture.candidate("at-\(index).dmg", size: Int64(index), modified: Int64(index), rule: .installers)
+        }
+
+        #expect(RustCandidateSorter.sorted(belowThreshold, by: .size) == nil)
+        #expect(RustCandidateSorter.sorted(atThreshold, by: .name) == nil)
+        let sortedAtThreshold = RustCandidateSorter.sorted(atThreshold, by: .size)
+        let expected = atThreshold.sorted { left, right in
+            left.size == right.size ? left.id < right.id : left.size > right.size
+        }
+        #expect(sortedAtThreshold?.map(\.id) == expected.map(\.id))
+    }
+
     @MainActor @Test func reportsBatchProgressFromOffMainThreadMatcher() async throws {
         let fixture = try CandidateMatcherFixture()
         defer { fixture.dispose() }
@@ -143,4 +243,14 @@ struct CandidateMatcherTests {
             CandidateMatchProgress(processed: 3_000, total: 3_000)
         ])
     }
+}
+
+private func medianNanoseconds(repeating count: Int, operation: () -> Void) -> Int64 {
+    let samples = (0..<count).map { _ -> Int64 in
+        let start = ContinuousClock.now
+        operation()
+        let elapsed = start.duration(to: .now).components
+        return elapsed.seconds * 1_000_000_000 + elapsed.attoseconds / 1_000_000_000
+    }
+    return samples.sorted()[samples.count / 2]
 }

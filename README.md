@@ -6,8 +6,12 @@ telemetry, network services or background indexing.
 
 ## Build and run
 
-Requires Apple Silicon macOS 15+, Swift 6.2 and the macOS SDK. Xcode or matching
-Command Line Tools are sufficient. No package downloads are required.
+Requires Apple Silicon macOS 15+, Swift 6.2, the macOS SDK, and Rust 1.99.1.
+Xcode or matching Command Line Tools are sufficient. Install Rust with `rustup`;
+the checked-in `rust-toolchain.toml` selects the compiler plus the `clippy` and
+`rustfmt` components. On first use, `rustup` may download these toolchain
+components. Sweepdeck has no third-party Swift Package Manager or Cargo crate
+dependencies; Rust is needed to build the accelerator into the app.
 
 ```sh
 bash scripts/swift.sh test

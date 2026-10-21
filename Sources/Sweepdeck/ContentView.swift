@@ -1,8 +1,10 @@
 import SwiftUI
 import SweepdeckCore
+import SweepdeckAppearance
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
+
     var body: some View {
         NavigationSplitView {
             VStack(alignment: .leading, spacing: 20) {
@@ -61,6 +63,8 @@ struct ContentView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(.background)
             .toolbar {
                 ToolbarItemGroup {
                     Button { model.chooseFolder() } label: { Label("Choose Folder", systemImage: "folder.badge.plus") }
@@ -76,6 +80,7 @@ struct ContentView: View {
         .alert("Sweepdeck", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("OK", role: .cancel) { model.errorMessage = nil }
         } message: { Text(model.errorMessage ?? "") }
+        .sweepdeckAppearance(model.preferences.appearanceMode)
     }
 }
 
@@ -93,6 +98,29 @@ struct PageTitle: View {
             Text(title).font(.largeTitle.weight(.semibold))
             Text(subtitle).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct ResultPageFooter: View {
+    let page: ResultPage
+    let itemLabel: String
+    let onPageChange: (Int) -> Void
+
+    var body: some View {
+        if page.pageCount > 1 {
+            HStack {
+                Text("Showing \(page.range.lowerBound + 1)–\(page.range.upperBound) of \(page.itemCount) \(itemLabel)")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                Spacer()
+                Button("Previous") { onPageChange(page.pageIndex - 1) }
+                    .disabled(!page.hasPrevious)
+                Text("Page \(page.pageIndex + 1) of \(page.pageCount)")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                Button("Next") { onPageChange(page.pageIndex + 1) }
+                    .disabled(!page.hasNext)
+            }
+            .buttonStyle(.borderless)
+        }
     }
 }
 
