@@ -34,8 +34,12 @@ app_path="/Applications/Sweepdeck.app"
 tap_name="miguel-osuna/tap"
 cask_name="$tap_name/sweepdeck"
 release_url='https://github.com/miguel-osuna/Sweepdeck/releases/download/v#{version}/Sweepdeck-#{version}-macOS.zip'
+open_pid=""
 
 stop_test_app() {
+  if [[ -n "$open_pid" ]]; then
+    kill -TERM "$open_pid" >/dev/null 2>&1 || true
+  fi
   pkill -TERM -x Sweepdeck >/dev/null 2>&1 || true
 }
 
@@ -119,8 +123,26 @@ launchctl setenv SWEEPDECK_STATE_DIR "$temporary_state"
 set +e
 spctl --assess --type execute --verbose=4 "$app_path" >"$temporary_dir/gatekeeper.txt" 2>&1
 gatekeeper_status=$?
-open -a "$app_path" >"$temporary_dir/first-launch.txt" 2>&1
-open_status=$?
+cat "$temporary_dir/gatekeeper.txt"
+open -a "$app_path" >"$temporary_dir/first-launch.txt" 2>&1 &
+open_pid=$!
+open_status=0
+for _ in {1..15}; do
+  if ! kill -0 "$open_pid" >/dev/null 2>&1; then
+    wait "$open_pid"
+    open_status=$?
+    open_pid=""
+    break
+  fi
+  sleep 1
+done
+if [[ -n "$open_pid" ]]; then
+  echo "Launch Services did not return within 15 seconds." >>"$temporary_dir/first-launch.txt"
+  kill -TERM "$open_pid" >/dev/null 2>&1 || true
+  wait "$open_pid" >/dev/null 2>&1 || true
+  open_status=124
+  open_pid=""
+fi
 sleep 5
 if pgrep -x Sweepdeck >/dev/null 2>&1; then
   launch_status=0
@@ -131,6 +153,8 @@ set -e
 
 cat "$temporary_dir/gatekeeper.txt"
 cat "$temporary_dir/first-launch.txt"
+printf 'Gatekeeper status: %s; Launch Services status: %s; app process: %s\n' \
+  "$gatekeeper_status" "$open_status" "$launch_status"
 if [[ "$gatekeeper_status" -ne 0 || "$open_status" -ne 0 || "$launch_status" -ne 0 ]]; then
   echo "The Homebrew-quarantined release candidate did not pass Gatekeeper and first-launch checks." >&2
   exit 1
