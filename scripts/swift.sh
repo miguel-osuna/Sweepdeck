@@ -84,17 +84,6 @@ if [[ "$command_name" == "test" || "$command_name" == "build" ]]; then
 fi
 
 frameworks="$(dirname "$toolchain_usr")/Library/Developer/Frameworks"
-developer_dir="${DEVELOPER_DIR:-$(xcode-select -p)}"
-xctest_frameworks="$developer_dir/Platforms/MacOSX.platform/Developer/Library/Frameworks"
-if [[ ! -d "$xctest_frameworks/XCTest.framework" && -d "$developer_dir/Library/Developer/Frameworks/XCTest.framework" ]]; then
-    xctest_frameworks="$developer_dir/Library/Developer/Frameworks"
-fi
-xctest_available=false
-xctest_flags=()
-if [[ -d "$xctest_frameworks/XCTest.framework" ]]; then
-    xctest_available=true
-    xctest_flags=(--enable-xctest --disable-swift-testing --no-parallel -Xswiftc -D -Xswiftc SWEEPDECK_USE_XCTEST -Xswiftc -F -Xswiftc "$xctest_frameworks" -Xlinker -rpath -Xlinker "$xctest_frameworks")
-fi
 if [[ "$command_name" == "test" && -d "$frameworks/Testing.framework" ]]; then
     testing_flags+=(--disable-xctest --enable-swift-testing --no-parallel)
     testing_support_flags+=(-Xswiftc -F -Xswiftc "$frameworks" -Xlinker -rpath -Xlinker "$frameworks")
@@ -104,20 +93,12 @@ if [[ "$command_name" == "test" && -d "$frameworks/Testing.framework" ]]; then
     fi
 fi
 
-# SwiftPM's Darwin Swift Testing helper can exit with signal 11 after the
-# AppKit appearance test reports success on some toolchains. Prefer XCTest for
-# that target when the full Xcode XCTest framework is available; keep the
-# Command Line Tools path working with Swift Testing.
+# Run the AppKit appearance regression in its own Swift Testing process. This
+# keeps it separate from the core suite and avoids XCTest's crashing AppKit
+# teardown path on hosted macOS runners.
 if [[ "$command_name" == "test" ]]; then
-    if [[ "$xctest_available" == true ]]; then
-        echo "XCTest.framework found; the AppKit appearance regression uses XCTest." >&2
-    else
-        echo "XCTest.framework unavailable; the AppKit appearance regression uses Swift Testing." >&2
-    fi
-
     has_explicit_selection=false
     has_coverage=false
-    appearance_filter=false
     expect_filter_value=false
     for argument in "$@"; do
         case "$argument" in
@@ -127,29 +108,16 @@ if [[ "$command_name" == "test" ]]; then
                 ;;
             --filter=*)
                 has_explicit_selection=true
-                filter_value="${argument#--filter=}"
-                case "$filter_value" in
-                    *SweepdeckAppearanceTests*|*switchingFromDarkToSystemKeepsSplitViewInSystemAppearance*) appearance_filter=true ;;
-                esac
                 ;;
             --test-product|--test-product=*|--list-tests|--help|-h|list|help) has_explicit_selection=true ;;
             --enable-code-coverage) has_coverage=true ;;
             *)
                 if [[ "$expect_filter_value" == true ]]; then
                     expect_filter_value=false
-                    case "$argument" in
-                        *SweepdeckAppearanceTests*|*switchingFromDarkToSystemKeepsSplitViewInSystemAppearance*) appearance_filter=true ;;
-                    esac
                 fi
                 ;;
         esac
     done
-
-    if [[ "$appearance_filter" == true && "$xctest_available" == true ]]; then
-        exec swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
-            ${extra_flags[@]+"${extra_flags[@]}"} ${testing_support_flags[@]+"${testing_support_flags[@]}"} \
-            ${xctest_flags[@]+"${xctest_flags[@]}"} "$@"
-    fi
 
     if [[ "$has_explicit_selection" == false ]]; then
         test_targets=(SweepdeckCoreTests SweepdeckAppearanceTests)
@@ -159,17 +127,10 @@ if [[ "$command_name" == "test" ]]; then
             test_targets=(SweepdeckAppearanceTests SweepdeckCoreTests)
         fi
         for test_target in "${test_targets[@]}"; do
-            if [[ "$test_target" == "SweepdeckAppearanceTests" && "$xctest_available" == true ]]; then
-                echo "Running $test_target through XCTest to avoid the Swift Testing helper crash." >&2
-                swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
-                    ${extra_flags[@]+"${extra_flags[@]}"} ${testing_support_flags[@]+"${testing_support_flags[@]}"} \
-                    ${xctest_flags[@]+"${xctest_flags[@]}"} --filter "$test_target" "$@"
-            else
-                echo "Running $test_target in an isolated Swift Testing process." >&2
-                swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
-                    ${extra_flags[@]+"${extra_flags[@]}"} ${testing_support_flags[@]+"${testing_support_flags[@]}"} \
-                    ${testing_flags[@]+"${testing_flags[@]}"} --filter "$test_target" "$@"
-            fi
+            echo "Running $test_target in an isolated Swift Testing process." >&2
+            swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
+                ${extra_flags[@]+"${extra_flags[@]}"} ${testing_support_flags[@]+"${testing_support_flags[@]}"} \
+                ${testing_flags[@]+"${testing_flags[@]}"} --filter "$test_target" "$@"
         done
         exit 0
     fi

@@ -3,11 +3,7 @@ import Combine
 import SwiftUI
 import SweepdeckAppearance
 import SweepdeckCore
-#if SWEEPDECK_USE_XCTEST && canImport(XCTest)
-import XCTest
-#else
 import Testing
-#endif
 
 @MainActor
 private final class AppearanceSelection: ObservableObject {
@@ -151,23 +147,10 @@ private func expect(_ condition: @autoclosure () -> Bool, _ message: String) thr
     guard condition() else { throw AppearanceRegressionFailure(description: message) }
 }
 
-#if SWEEPDECK_USE_XCTEST && canImport(XCTest)
-final class AppearanceTransitionTests: XCTestCase {
-    @MainActor
-    func test_switchingFromDarkToSystemKeepsSplitViewInSystemAppearance() {
-        do {
-            try verifyDarkToSystemAppearanceTransition()
-        } catch {
-            XCTFail(String(describing: error))
-        }
-    }
-}
-#else
 @MainActor
 @Test func switchingFromDarkToSystemKeepsSplitViewInSystemAppearance() throws {
     try verifyDarkToSystemAppearanceTransition()
 }
-#endif
 
 @MainActor
 private func captureRenderedImage(of view: NSView) -> NSBitmapImageRep? {
