@@ -4,7 +4,7 @@
 |---|---|---|
 | macOS 15 | Minimum deployment target | 43 tests, 80% core coverage floor and release build passed with Swift 6.2 on the `macos-15` runner ([run #94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559)); interactive UI runtime not checked |
 | macOS 26 | Latest stable Swift toolchain lane | 43 tests, 80% core coverage floor and release build passed with Swift 6.4.1 on the `macos-26` runner ([run #94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559)); interactive UI runtime not checked |
-| macOS 27 preview | Preview compatibility lane | Earlier 43-test run passed with Swift 6.4 and Xcode 27 preview ([run #94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559)). Latest release-branch run ([39570272638](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570272638)) exited with signal 11 in `swiftpm-testing-helper` during `SweepdeckAppearanceTests`; preview evidence only, interactive UI runtime not checked |
+| macOS 27 preview | Preview compatibility lane | Earlier 43-test run passed with Swift 6.4 and Xcode 27 preview ([run #94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559)). On the latest shared commit, push run [39570272638](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570272638) exited with signal 11 in `swiftpm-testing-helper` during `SweepdeckAppearanceTests`, while duplicate pull-request run [39570279509](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570279509) passed; preview evidence is inconsistent, interactive UI runtime not checked |
 | macOS 26.6.2, arm64 | Local host | 43 tests, 85.4% core executable-line coverage and release bundle build passed; see `Docs/VALIDATION.md` for fixture checks and outstanding pixel-level visual verification |
 | Intel / other versions | Not a product target | Not tested |
 
@@ -83,7 +83,9 @@ No private API, cached directory-layout-based app uninstalling or SDK 27 depende
 See Docs/VALIDATION.md for exact commands, results, manual checks and limitations.
 GitHub Actions run #94 historically verified the 43-test suite, 80% core coverage
 floor and release compilation on `macos-15`, `macos-26`, and the macOS 27/Xcode 27
-preview lane. In latest release-branch run #39570272638, the `macos` and stable
-Swift 6.4.1 lanes passed, while the Xcode 27 preview test helper exited with signal
-11 during `SweepdeckAppearanceTests`. These CI runs do not verify interactive launch,
-permissions prompts or visual UI behavior on any runner.
+preview lane. On shared commit `47cc1b4`, stable lanes passed in push run
+#39570272638 and the duplicate pull-request run #39570279509 passed the full matrix;
+the push run's Xcode 27 test helper exited with signal 11 during
+`SweepdeckAppearanceTests`. The preview result is inconsistent. These CI runs do
+not verify interactive launch, permissions prompts or visual UI behavior on any
+runner.
