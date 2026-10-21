@@ -30,6 +30,7 @@ assert.equal(manifest.devDependencies["semantic-release"], "25.0.9");
 assert.equal(manifest.devDependencies["@semantic-release/exec"], "7.1.0");
 assert.equal(manifest.devDependencies["@semantic-release/github"], "12.0.10");
 assert.deepEqual(lock.packages[""].devDependencies, manifest.devDependencies);
+assert.match(manifest.scripts["test:release-tools"], /test-release-baseline\.sh/);
 assert.match(releaseWorkflow, /actions:\s*read/);
 assert.match(releaseWorkflow, /bash scripts\/check-release-environment\.sh/);
 assert.match(releaseWorkflow, /environment: release/);

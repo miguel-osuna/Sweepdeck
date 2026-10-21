@@ -18,9 +18,10 @@ before creating the tag and GitHub Release. If there is no release-worthy commit
 exits without publishing.
 
 The first publish run creates the `v0.0.0` analysis baseline at the repository's single
-root commit. The workflow refuses to publish if semantic-release does not propose
-exactly `0.1.0` as the first release. Subsequent versions follow Conventional Commit
-rules. The release tool does not publish an npm package.
+root commit, and verifies any existing baseline tag still points there. The workflow
+refuses to publish if semantic-release does not propose exactly `0.1.0` as the first
+release. Subsequent versions follow Conventional Commit rules. The release tool does
+not publish an npm package.
 
 ## Distribution status
 
