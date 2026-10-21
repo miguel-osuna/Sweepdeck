@@ -1,42 +1,61 @@
-# Sweepdeck
+<div align="center">
+  <img src="Resources/SweepdeckIcon.png" alt="Sweepdeck app icon" width="136">
+  <h1>Sweepdeck</h1>
+  <p><strong>Know what's using your storage. Review every cleanup before it reaches Trash.</strong></p>
+  <p>
+    <a href="https://github.com/miguel-osuna/Sweepdeck/actions/workflows/build.yml"><img alt="Build and test" src="https://github.com/miguel-osuna/Sweepdeck/actions/workflows/build.yml/badge.svg?branch=main"></a>
+    <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/miguel-osuna/Sweepdeck"></a>
+    <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-000000?logo=apple">
+  </p>
+</div>
 
-A native, local macOS utility for understanding storage and reviewing files before
-moving them to Trash. Free, original MIT-licensed code. No subscriptions, accounts,
-telemetry, network services or background indexing.
+Sweepdeck is a free, native macOS utility for inspecting local storage and reviewing
+individual files before moving them to Trash. No accounts, subscriptions, telemetry,
+network services, or background indexing.
 
-## Build and run
+## What it does
 
-Requires Apple Silicon macOS 15+, Swift 6.2, the macOS SDK, and Rust 1.99.1.
-Xcode or matching Command Line Tools are sufficient. Install Rust with `rustup`;
-the checked-in `rust-toolchain.toml` selects the compiler plus the `clippy` and
-`rustfmt` components. On first use, `rustup` may download these toolchain
-components. Sweepdeck has no third-party Swift Package Manager or Cargo crate
-dependencies; Rust is needed to build the accelerator into the app.
+- Shows storage capacity, recommendations, and a partial explorer for authorized folders.
+- Scans only folders you choose for old installers, Downloads items, logs, and large files.
+- Lets you inspect each candidate, preview the exact paths, and choose what to move to Trash.
+- Keeps a bounded local history and shows CPU, memory, swap, storage, and thermal readings.
 
-```sh
-bash scripts/swift.sh test
-bash scripts/build-app.sh
-open dist/Sweepdeck.app
-```
+## Safety by design
 
-The build creates a locally ad-hoc signed app. No developer identity or provisioning
-profile is needed. This is not a notarized public distribution build.
+- Nothing scans at launch. You choose each folder before scanning it.
+- The selection starts empty. Every category requires review.
+- A five-minute preview is revalidated before each file moves to macOS Trash.
+- Sweepdeck never permanently deletes files, empties Trash, or moves directories.
+- Protected locations, hidden files, repositories, symlinks, packages, and cloud-managed files are excluded.
 
-## Homebrew distribution
+See [SAFETY.md](SAFETY.md) for the full eligibility rules and limitations.
 
-The planned install command is:
+## Scope
+
+Sweepdeck handles individual regular files in explicitly authorized local folders.
+File age and size help find items to review; they do not prove a file is disposable.
+It does not remove directories or apps, find duplicates, mutate developer caches, scan
+external or network volumes, or terminate processes. The folder explorer is partial
+and uses the bounded scan results.
+
+## Download and Homebrew
+
+[Version 0.1.0 is available on GitHub Releases](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.1.0).
+That archive was published before the new app icon was added. The icon-bearing release
+and Homebrew cask are being prepared; the cask will be added to the owner-managed tap
+only after its versioned release asset passes the disposable macOS checks.
+
+The planned one-command install is:
 
 ```sh
 brew install --cask miguel-osuna/tap/sweepdeck
 ```
 
-The first versioned release and tap cask are still pending review and publication,
-so this command is not available yet. Once published, the fully qualified command
-will select and trust only `miguel-osuna/tap/sweepdeck`; it will not trust every
-current or future item in the tap.
+This command is not available until the cask is published. Homebrew's [tap trust
+behavior](https://docs.brew.sh/Tap-Trust) trusts only the fully qualified cask above;
+it does not trust every formula and cask in the tap.
 
-To install by the short name instead, users must first tap the repository and trust
-this cask explicitly:
+After publication, installing by the short name requires these setup steps first:
 
 ```sh
 brew tap miguel-osuna/tap
@@ -44,85 +63,70 @@ brew trust --cask miguel-osuna/tap/sweepdeck
 brew install --cask sweepdeck
 ```
 
-When published, the cask will install only `Sweepdeck.app`. Uninstall will remove the
-app bundle and leave Sweepdeck preferences and history in place; the cask will have
-no `zap` stanza. This free build has an ad-hoc signature, no Apple-issued Developer ID
-signature, and no notarization ticket. In the disposable macOS 26 first-launch check,
-Gatekeeper showed **“Sweepdeck” Not Opened** and said Apple could not verify that it was
-free of malware. The dialog offered **Move to Trash** or **Done**. If you choose to
-proceed, click **Done**, then open **System Settings > Privacy & Security** and choose
-**Open Anyway** under Security if macOS offers it. Apple says that option is available
-for about an hour after an attempted open. Read Apple's [security
-guidance](https://support.apple.com/en-au/102445) and make that choice only if you trust
-the app and its source. Our check did not approve the app or verify a successful
-post-approval launch. Homebrew leaves quarantine in place; the cask will not bypass
-Gatekeeper. This owner-managed tap path does not pass Homebrew's official cask Gatekeeper
-requirement. See
-[compatibility evidence](COMPATIBILITY.md) before installing.
+The cask will install only `Sweepdeck.app` and have no `zap` stanza or cleanup
+scripts. Uninstall will leave Sweepdeck preferences and history in place.
 
-On a healthy Xcode installation, `swift test` and `swift build -c release` also work.
-The wrapper keeps caches inside `.build` and handles two detected remnants of
-incomplete Command Line Tools upgrades without modifying installed tools. See
-[compatibility](COMPATIBILITY.md). Swift 6 language mode is selected by the package's
-Swift tools version. The wrapper disables SwiftPM's manifest sandbox for this
-dependency-free local package; this does not change macOS settings or app permissions.
+### Gatekeeper on first launch
+
+The free release is ad-hoc signed, without an Apple-issued Developer ID signature or
+notarization ticket. In the disposable macOS 26 check, Gatekeeper blocked the first
+open and said Apple could not verify Sweepdeck is free of malware. The dialog offered
+**Move to Trash** or **Done**. Homebrew preserves quarantine, and the cask will not
+bypass Gatekeeper or automate an approval.
+
+If you decide to proceed, choose **Done**, then check **System Settings > Privacy &
+Security** for **Open Anyway** after the attempted launch. Read Apple's [security
+guidance](https://support.apple.com/en-au/102445) and continue only if you trust the
+app and its source. The disposable check did not approve the app or verify a successful
+post-approval launch. See [compatibility evidence](COMPATIBILITY.md) before installing.
+
+## Build from source
+
+Requires Apple Silicon, macOS 15+, Swift 6.2, the macOS SDK, and Rust 1.99.1. Xcode
+or matching Command Line Tools are sufficient. Install Rust with `rustup`; the checked-in
+`rust-toolchain.toml` selects the compiler plus `clippy` and `rustfmt`. The first Rust
+use can download these components. Sweepdeck has no third-party Swift Package Manager
+or Cargo crate dependencies; Rust builds the local accelerator.
+
+```sh
+bash scripts/swift.sh test
+bash scripts/build-app.sh
+open dist/Sweepdeck.app
+```
+
+The build creates a locally ad-hoc signed app. No developer identity, provisioning
+profile, or App Store membership is required to build it. Public distribution may show
+the Gatekeeper approval described above.
 
 ## First use
 
 1. Choose a specific folder using **Choose Folder**. Nothing scans at startup.
-2. Select **Scan Mac**. Only authorized folders are scanned.
-3. Open **Smart Cleanup**, expand a category, inspect individual files, and select
-   only the files you no longer need. Every current category requires review.
-4. Choose **Preview Cleanup** for a dry run. Review all paths and rejected items.
+2. Select **Scan Mac**. Sweepdeck scans only folders you authorized.
+3. Open **Smart Cleanup**, expand a category, inspect the files, and select only what you no longer need.
+4. Choose **Preview Cleanup** and review every path and rejected item.
 5. Acknowledge the review and explicitly choose **Move Files to Trash**.
 
-Use Finder's Trash to restore files. Sweepdeck never permanently deletes files or
-empties Trash. Moving files to Trash usually does not immediately free space.
-
-## Implemented MVP
-
-- Capacity dashboard with file-size estimates and recommendation cards.
-- Cancellable, serial metadata scans of explicitly chosen local internal folders.
-- Old regular-file DMG/PKG installers, old Downloads files, old `.log` files,
-  and large files with configurable thresholds. Age and size are discovery signals.
-- Empty initial selection, category and per-file selection, filtering/sorting,
-  details, Finder integration, file/folder exclusions and rule toggles.
-- Dry-run preview, five-minute plan expiry, identity/policy revalidation and
-  confirmed Trash operations with per-file outcomes and cancellation.
-- Partial, size-sorted folder explorer using the scan's eligible files.
-- CPU, RAM estimate, swap, storage and thermal metrics while Health is visible.
-  Activity Monitor opens for memory pressure and process details.
-- Local preferences, bounded operation history, appearance and redacted diagnostics.
-
-## Deliberate limits
-
-Individual regular files only. No directory deletion, app uninstalling, duplicates,
-developer-cache mutation, external/network volume scanning or process termination.
-Repositories/worktrees, hidden files, Library data, known secrets/databases,
-packages, symlinks, hard links, special flags and cloud-managed files are excluded.
-Some ordinary files will be conservatively excluded. See [safety](SAFETY.md).
-
-Scans stop after 25,000 visited entries and retain up to 100 issue details. Explorer
-totals exclude protected/inaccessible files and are not full-volume accounting.
-Folder/rule/exclusion changes invalidate existing results; rerun the scan.
+Finder's Trash can restore moved files. Moving files to Trash usually does not
+immediately free disk space.
 
 ## Local data and privacy
 
-Preferences/history live in `~/Library/Application Support/Sweepdeck/state.json`.
-History can contain file paths and retains at most 50 operations / 1,000 item
-results. Diagnostics export contains counts and OS/app versions, not paths or
-file contents. No data is sent anywhere.
+Preferences and history live in
+`~/Library/Application Support/Sweepdeck/state.json`. History can contain file paths
+and retains at most 50 operations / 1,000 item results. Diagnostics export contains
+counts and OS/app versions, not paths or file contents. No data is sent anywhere.
 
-For isolated GUI validation, pass `--sweepdeck-state-directory <temporary-directory>`
-to the app at launch. This redirects only preferences/history; it does not add folders,
-scan, or authorize cleanup.
+For isolated GUI validation, pass
+`--sweepdeck-state-directory <temporary-directory>` to the app at launch. This
+redirects only preferences and history; it does not add folders, scan, or authorize
+cleanup.
 
-## Maintenance
+## Documentation
 
-- [Architecture](ARCHITECTURE.md)
-- [Safety and limitations](SAFETY.md)
 - [Compatibility and verification](COMPATIBILITY.md)
 - [Release process](Docs/RELEASING.md)
+- [Architecture](ARCHITECTURE.md)
+- [Safety and limitations](SAFETY.md)
 - [Contributing](CONTRIBUTING.md)
 - [Roadmap](Docs/ROADMAP.md)
 - [License](LICENSE)
