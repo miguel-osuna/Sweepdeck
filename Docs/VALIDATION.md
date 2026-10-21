@@ -1,14 +1,16 @@
 # Validation record
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
-Command Line Tools but no active full Xcode installation. The previous feature
-head `6b07ebe` passed all 47 tests, measured 693/794 executable `SweepdeckCore`
-lines (87.3%), and built on Swift 6.2/macOS 15, Swift 6.4.1/macOS 26 and Xcode 27
-preview/macOS 27 in [run #39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011).
-That run also verified Swift cache relocation on all three lanes. The feature
-branch now includes the two release-metadata tests and the release-pipeline merge;
-CI for that combined head is pending. The focused appearance test and all 8 Rust
-tests pass locally, and `scripts/build-app.sh` succeeds with
+Command Line Tools but no active full Xcode installation. The merged head passed
+[GitHub Actions run #39557070612](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39557070612)
+on macOS 15 with Swift 6.2, macOS 26 with Swift 6.4.1, and the Xcode 27 preview
+on macOS 27. Each lane passed 49 Swift tests and 8 Rust tests; the macOS 15 lane
+measured 709/808 executable `SweepdeckCore` lines (87.7%). Release builds and
+release-tooling checks passed. The previous feature head `6b07ebe` also passed
+the 47-test suite and verified Swift cache relocation on all three lanes in
+[run #39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011).
+The focused appearance test and all 8 Rust tests pass locally, and
+`scripts/build-app.sh` succeeds with
 `SWEEPDECK_VERSION=0.1.0`. On this host, the full Swift test command exits with
 signal 11 in `swiftpm-testing-helper` after the appearance test passes and the
 next test starts; both tests pass when run separately. This host-specific result
@@ -36,8 +38,8 @@ on a CI runner.
   the main thread over 3,000 entries. Four `ResultPageTests` cover empty and
   partial pages, invalid indexes and dimensions, safe very-large ranges, and
   lossless traversal of 25,000 rows while limiting each page to 100.
-- The current feature-branch CI run measured 693 of 794 executable `SweepdeckCore`
-  source lines covered (87.3%). `DiskExplorerMatcher.swift` has 97.1% line
+- The merged-head CI run measured 709 of 808 executable `SweepdeckCore` source
+  lines covered (87.7%). `DiskExplorerMatcher.swift` has 97.1% line
   coverage. The SwiftUI app target is not included in the SwiftPM test coverage
   report. CI enforces an 80% `SweepdeckCore` executable-line floor on all three
   platform lanes.
@@ -45,11 +47,12 @@ on a CI runner.
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
 - GitHub Actions run
-  [#39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011)
-  passed all 47 tests, the 80% `SweepdeckCore` line-coverage floor and release
-  build with Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`, and Xcode 27
-  preview on macOS 27. The run measured 87.3% core line coverage. These checks do
-  not verify interactive UI behavior.
+  [#39557070612](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39557070612)
+  passed the 49-test Swift suite, 8 Rust tests, 80% `SweepdeckCore` coverage
+  floor and release builds with Swift 6.2 on `macos-15`, Swift 6.4.1 on
+  `macos-26`, and Xcode 27 preview on macOS 27. The macOS 15 lane measured 87.7%
+  core line coverage. Release-tooling checks also passed. These checks do not
+  verify interactive UI behavior.
 - Standalone CLI smokes used generated fixtures only, but could not verify Trash
   without the app's folder-picker flow: direct `FileManager.trashItem` returned
   Cocoa error 513 / OSStatus -5000 (`afpAccessDenied`), and `MacTrashService`
