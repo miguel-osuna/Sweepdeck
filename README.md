@@ -108,9 +108,9 @@ History can contain file paths and retains at most 50 operations / 1,000 item
 results. Diagnostics export contains counts and OS/app versions, not paths or
 file contents. No data is sent anywhere.
 
-For isolated validation, set `SWEEPDECK_STATE_DIR` to a temporary state directory
-when launching the executable. This only redirects preferences/history; it does
-not add folders, scan, or authorize cleanup.
+For isolated GUI validation, pass `--sweepdeck-state-directory <temporary-directory>`
+to the app at launch. This redirects only preferences/history; it does not add folders,
+scan, or authorize cleanup.
 
 ## Maintenance
 

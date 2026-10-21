@@ -48,7 +48,6 @@ finish() {
   result=$?
   set +e
   stop_test_app
-  launchctl unsetenv SWEEPDECK_STATE_DIR >/dev/null 2>&1
   if brew list --cask --full-name 2>/dev/null | grep -Fxq "$cask_name"; then
     brew uninstall --cask "$cask_name"
   fi
@@ -127,7 +126,6 @@ find "$app_path" -maxdepth 4 -print
 
 quarantine="$(xattr -p com.apple.quarantine "$app_path")"
 printf 'Homebrew quarantine: %s\n' "$quarantine"
-launchctl setenv SWEEPDECK_STATE_DIR "$temporary_state"
 codesign --verify --strict "$app_path"
 signature_info="$(codesign -dv --verbose=4 "$app_path" 2>&1 || true)"
 printf '%s\n' "$signature_info"
@@ -141,7 +139,7 @@ set +e
 spctl --assess --type execute --verbose=4 "$app_path" >"$temporary_dir/gatekeeper.txt" 2>&1
 gatekeeper_status=$?
 cat "$temporary_dir/gatekeeper.txt"
-open -a "$app_path" >"$temporary_dir/first-launch.txt" 2>&1 &
+open -a "$app_path" --args --sweepdeck-state-directory "$temporary_state" >"$temporary_dir/first-launch.txt" 2>&1 &
 open_pid=$!
 launch_started="$SECONDS"
 open_status=0
@@ -172,6 +170,13 @@ fi
 sleep 5
 if pgrep -x Sweepdeck >/dev/null 2>&1; then
   launch_status=0
+  process_id="$(pgrep -x Sweepdeck | head -n 1)"
+  process_command="$(ps -p "$process_id" -o command=)"
+  printf 'Sweepdeck process: %s\n' "$process_command"
+  [[ "$process_command" == *"--sweepdeck-state-directory"* && "$process_command" == *"$temporary_state"* ]] || {
+    echo "Sweepdeck did not receive the temporary state directory argument." >&2
+    exit 1
+  }
 else
   launch_status=1
 fi

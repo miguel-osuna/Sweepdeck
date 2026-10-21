@@ -81,7 +81,12 @@ final class AppModel: ObservableObject {
     @Published private(set) var isPresentingPanel = false
 
     init() {
-        if let directory = ProcessInfo.processInfo.environment["SWEEPDECK_STATE_DIR"] {
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "--sweepdeck-state-directory"),
+           arguments.indices.contains(index + 1) {
+            let directory = URL(fileURLWithPath: arguments[index + 1])
+            store = JSONStore(url: directory.appendingPathComponent("state.json"))
+        } else if let directory = ProcessInfo.processInfo.environment["SWEEPDECK_STATE_DIR"] {
             store = JSONStore(url: URL(fileURLWithPath: directory).appendingPathComponent("state.json"))
         } else { store = .application }
         do { state = try store.load() }

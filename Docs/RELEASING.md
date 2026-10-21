@@ -35,7 +35,7 @@ Before publication, a separate Homebrew candidate job downloads those exact file
 runs the cask through Homebrew audit and style, installs and uninstalls it on a
 disposable `macos-26` Apple Silicon runner, checks the installed bundle and Homebrew
 quarantine, verifies the ad-hoc code signature, runs `spctl`, and attempts a first
-launch with `SWEEPDECK_STATE_DIR` pointed at temporary state. This release uses the
+launch with `--sweepdeck-state-directory` pointed at temporary state. This release uses the
 no-cost, ad-hoc-signed build. Gatekeeper rejection is recorded as an expected
 user-approval requirement only when the bundle signature verifies as ad hoc. Other
 assessment failures, broken installs, checksum failures, or uninstall leftovers still
@@ -47,9 +47,10 @@ The public tap's pull-request workflow will repeat audit, style, install, quaran
 Gatekeeper reporting, and uninstall against the actual versioned GitHub Release URL on
 `macos-26` before a cask update can merge.
 
-For GUI launch isolation, the disposable runner temporarily sets
-`SWEEPDECK_STATE_DIR` in its launchd environment and unsets it from the script's exit
-trap; the local developer machine and its Homebrew state are not used by this check.
+For GUI launch isolation, the disposable runner passes
+`--sweepdeck-state-directory <temporary-directory>` to the app through Launch Services.
+This keeps preferences and history in the runner's temporary directory without changing
+its launch session configuration.
 
 The latest completed candidate check, [Actions run 39633942051](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39633942051),
 built the release-shaped 0.1.0 archive and verified its sidecar SHA-256
