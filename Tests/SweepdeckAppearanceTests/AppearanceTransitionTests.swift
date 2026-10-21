@@ -149,8 +149,10 @@ private func captureRenderedImage(of view: NSView) -> NSBitmapImageRep? {
 private func renderedDifferenceCount(_ left: NSBitmapImageRep, _ right: NSBitmapImageRep) -> Int {
     guard left.pixelsWide == right.pixelsWide, left.pixelsHigh == right.pixelsHigh else { return .max }
     var differences = 0
-    for y in 0..<left.pixelsHigh {
-        for x in 0..<left.pixelsWide {
+    // Sample the full rendered surface on a coarse grid. Converting every
+    // AppKit pixel to device RGB made this regression test take tens of seconds.
+    for y in stride(from: 0, to: left.pixelsHigh, by: 8) {
+        for x in stride(from: 0, to: left.pixelsWide, by: 8) {
             guard let leftPixel = left.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
                   let rightPixel = right.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else {
                 differences += 1
