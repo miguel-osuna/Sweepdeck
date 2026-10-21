@@ -19,6 +19,10 @@ also passed the macOS 15, macOS 26, and macOS 27 preview build lanes in
 [Build and test run 39662470145](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39662470145),
 and the disposable Homebrew candidate smoke in
 [run 39662470012](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39662470012).
+The icon-bearing 0.2.0 candidate then passed the release verification matrix, candidate
+build, and disposable Homebrew smoke in [release run 39664467890](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890).
+That candidate is not yet a published release; its protected release job is waiting for
+reviewer approval.
 
 ## Homebrew and Gatekeeper evidence
 
@@ -39,10 +43,20 @@ with its isolated temporary state directory. The runner did not approve the app 
 verify a successful post-approval launch. It did not remove quarantine or disable
 Gatekeeper.
 
+The 0.2.0 candidate's archive sidecar SHA-256 was verified as
+`e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`. The archive
+contains only `Sweepdeck.app`, including `Contents/Resources/Sweepdeck.icns`. Its
+disposable macOS 26 Apple Silicon Homebrew candidate check passed audit, style, install,
+bundle/version and quarantine inspection, first-launch reporting, and uninstall. The
+captured first-launch screen again showed **“Sweepdeck” Not Opened**; the candidate
+check did not approve the app or verify a successful post-approval launch. The release
+workflow is waiting for the required environment reviewer, so the archive and checksum
+are not public yet.
+
 The cask is not yet public. Tap PR [#1](https://github.com/miguel-osuna/homebrew-tap/pull/1)
 currently provides the validation workflow and neutral tap description. The cask will
-be added after an icon-bearing release is available, then the tap workflow will test the
-actual public release URL. The intended install command is
+be added after the 0.2.0 icon-bearing release is public, then the tap workflow will test
+the actual public release URL. The intended install command is
 `brew install --cask miguel-osuna/tap/sweepdeck`. Homebrew trusts only that fully
 qualified cask for the command. Short-name install requires `brew tap miguel-osuna/tap`,
 `brew trust --cask miguel-osuna/tap/sweepdeck`, then `brew install --cask sweepdeck`.
@@ -68,8 +82,9 @@ App Store membership or paid signing account is needed to build.
 The app bundle build was attempted after adding the icon resource but stopped before
 compilation because Rust 1.99.1, selected by `rust-toolchain.toml`, is not installed in
 this workspace. No Rust toolchain, Xcode/Command Line Tools, macOS settings, or signing
-identity was changed. The 0.1.0 source build has passed in CI; icon packaging awaits the
-pull request's CI result. Local Homebrew and taps were not modified.
+identity was changed. The 0.1.0 source build passed in CI, and the icon-bearing build
+passed in PR #12 and the 0.2.0 candidate release run. Local Homebrew and taps were not
+modified.
 
 ## Verification details
 

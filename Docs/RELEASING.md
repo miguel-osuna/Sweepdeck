@@ -31,9 +31,15 @@ passed. It publishes the app-only archive
 and its `.sha256` sidecar. The verified archive SHA-256 is
 `383034386df5a692a687df6ff1b70ea088791df304dd8de568069da2fd097789`.
 
-The 0.1.0 archive was built before the app icon was added. The cask is intentionally
-waiting for the next icon-bearing app release so that the first Homebrew install
-includes the selected icon artwork.
+The 0.1.0 archive was built before the app icon was added. An icon-bearing 0.2.0
+candidate was built from `main` in [release run 39664467890](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890).
+Its app-only archive includes `Sweepdeck.icns`, and the candidate SHA-256 sidecar
+verified as
+`e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`. The release
+verification and disposable Homebrew smoke checks passed. The first-launch screen still
+showed the Gatekeeper malware-verification warning; the check did not approve the app or
+verify a successful post-approval launch. The protected `release` job is waiting for its
+required reviewer, so 0.2.0 and its archive are not public yet.
 
 ## Homebrew distribution
 

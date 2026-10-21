@@ -41,9 +41,11 @@ and uses the bounded scan results.
 ## Download and Homebrew
 
 [Version 0.1.0 is available on GitHub Releases](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.1.0).
-That archive was published before the new app icon was added. The icon-bearing release
-and Homebrew cask are being prepared; the cask will be added to the owner-managed tap
-only after its versioned release asset passes the disposable macOS checks.
+That archive was published before the new app icon was added. The icon-bearing 0.2.0
+candidate passed the release verification and disposable Homebrew smoke checks in
+[run 39664467890](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890).
+It is waiting for the required release-environment approval. The cask remains
+unpublished until the versioned release asset is public and the tap pull request passes.
 
 The planned one-command install is:
 
@@ -73,6 +75,10 @@ notarization ticket. In the disposable macOS 26 check, Gatekeeper blocked the fi
 open and said Apple could not verify Sweepdeck is free of malware. The dialog offered
 **Move to Trash** or **Done**. Homebrew preserves quarantine, and the cask will not
 bypass Gatekeeper or automate an approval.
+
+The 0.2.0 candidate's [captured first-launch screen](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890)
+shows the same warning. That check did not approve the app or verify a successful
+post-approval launch.
 
 If you decide to proceed, choose **Done**, then check **System Settings > Privacy &
 Security** for **Open Anyway** after the attempted launch. Read Apple's [security
