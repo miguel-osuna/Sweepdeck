@@ -19,8 +19,10 @@ let package = Package(
             ]
         ),
         .target(name: "SweepdeckAppearance", dependencies: ["SweepdeckCore"]),
-        .executableTarget(name: "Sweepdeck", dependencies: ["SweepdeckCore", "SweepdeckAppearance"]),
+        .target(name: "SweepdeckPresentation"),
+        .executableTarget(name: "Sweepdeck", dependencies: ["SweepdeckCore", "SweepdeckAppearance", "SweepdeckPresentation"]),
         .testTarget(name: "SweepdeckCoreTests", dependencies: ["SweepdeckCore"]),
-        .testTarget(name: "SweepdeckAppearanceTests", dependencies: ["SweepdeckAppearance", "SweepdeckCore"])
+        .testTarget(name: "SweepdeckAppearanceTests", dependencies: ["SweepdeckAppearance", "SweepdeckCore"]),
+        .testTarget(name: "SweepdeckPresentationTests", dependencies: ["SweepdeckPresentation"])
     ]
 )

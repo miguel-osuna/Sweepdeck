@@ -93,9 +93,9 @@ if [[ "$command_name" == "test" && -d "$frameworks/Testing.framework" ]]; then
     fi
 fi
 
-# Run the AppKit appearance regression in its own Swift Testing process. This
-# keeps it separate from the core suite and avoids XCTest's crashing AppKit
-# teardown path on hosted macOS runners.
+# Run the AppKit appearance and presentation regressions in isolated Swift
+# Testing processes. This keeps them separate from the core suite and avoids
+# XCTest's crashing AppKit teardown path on hosted macOS runners.
 if [[ "$command_name" == "test" ]]; then
     has_explicit_selection=false
     has_coverage=false
@@ -120,11 +120,11 @@ if [[ "$command_name" == "test" ]]; then
     done
 
     if [[ "$has_explicit_selection" == false ]]; then
-        test_targets=(SweepdeckCoreTests SweepdeckAppearanceTests)
+        test_targets=(SweepdeckCoreTests SweepdeckAppearanceTests SweepdeckPresentationTests)
         if [[ "$has_coverage" == true ]]; then
             # SwiftPM writes one coverage report per invocation; keep the
             # core suite last so the project's core coverage gate sees it.
-            test_targets=(SweepdeckAppearanceTests SweepdeckCoreTests)
+            test_targets=(SweepdeckAppearanceTests SweepdeckPresentationTests SweepdeckCoreTests)
         fi
         for test_target in "${test_targets[@]}"; do
             echo "Running $test_target in an isolated Swift Testing process." >&2

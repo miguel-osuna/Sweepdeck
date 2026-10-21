@@ -1,5 +1,6 @@
 import SwiftUI
 import SweepdeckCore
+import SweepdeckPresentation
 
 struct CleanupView: View {
     @ObservedObject var model: AppModel
@@ -31,12 +32,13 @@ struct CleanupView: View {
                 }.frame(width: 160)
             }
             if model.candidates.isEmpty {
-                ContentUnavailableView(model.report == nil ? "Start with a scan" : "No matching candidates", systemImage: "sparkles",
-                    description: Text(model.report == nil ? "Choose a folder, then scan it to review eligible files." : "Your settings and safety protections determine what appears here."))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentPaneStatus(placement: .centered) {
+                    ContentUnavailableView(model.report == nil ? "Start with a scan" : "No matching candidates", systemImage: "sparkles",
+                        description: Text(model.report == nil ? "Choose a folder, then scan it to review eligible files." : "Your settings and safety protections determine what appears here."))
+                }
             } else {
                 if matchedSearchKey != searchKey {
-                    Group {
+                    ContentPaneStatus(placement: .topLeading) {
                         if let matchingProgress, matchingProgress.total > 0 {
                             ProgressView(
                                 "Updating matches: \(matchingProgress.processed.formatted()) of \(matchingProgress.total.formatted())",
@@ -47,7 +49,6 @@ struct CleanupView: View {
                             ProgressView("Updating matching files…")
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
