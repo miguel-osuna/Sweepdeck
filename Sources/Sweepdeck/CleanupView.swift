@@ -33,7 +33,7 @@ struct CleanupView: View {
             if model.candidates.isEmpty {
                 ContentUnavailableView(model.report == nil ? "Start with a scan" : "No matching candidates", systemImage: "sparkles",
                     description: Text(model.report == nil ? "Choose a folder, then scan it to review eligible files." : "Your settings and safety protections determine what appears here."))
-                    .frame(maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 if matchedSearchKey != searchKey {
                     Group {
