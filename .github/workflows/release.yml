@@ -112,6 +112,11 @@ jobs:
           SWEEPDECK_VERSION: ${{ steps.preflight.outputs.version }}
           SWEEPDECK_BUILD_STAGE: ${{ runner.temp }}/SweepdeckBuild-stage
         run: bash scripts/build-app.sh
+      - name: Package the direct-download DMG
+        if: steps.preflight.outputs.version != ''
+        env:
+          SWEEPDECK_VERSION: ${{ steps.preflight.outputs.version }}
+        run: bash scripts/package-dmg.sh "$SWEEPDECK_VERSION" "dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
       - name: Keep the candidate available for manual QA
         if: steps.preflight.outputs.version != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -120,6 +125,8 @@ jobs:
           path: |
             dist/Sweepdeck-${{ steps.preflight.outputs.version }}-macOS.zip
             dist/Sweepdeck-${{ steps.preflight.outputs.version }}-macOS.zip.sha256
+            dist/Sweepdeck-${{ steps.preflight.outputs.version }}-macOS.dmg
+            dist/Sweepdeck-${{ steps.preflight.outputs.version }}-macOS.dmg.sha256
           if-no-files-found: error
           retention-days: 7
 
@@ -136,6 +143,11 @@ jobs:
         with:
           name: Sweepdeck-release-candidate-${{ needs.candidate.outputs.release_version }}
           path: dist
+      - name: Inspect the versioned DMG on the disposable runner
+        env:
+          SWEEPDECK_VERSION: ${{ needs.candidate.outputs.release_version }}
+          SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' && runner.arch == 'ARM64' }}
+        run: bash scripts/test-dmg-candidate.sh "$SWEEPDECK_VERSION" "dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.dmg"
       - name: Validate Homebrew install and report first-launch approval behavior
         env:
           SWEEPDECK_VERSION: ${{ needs.candidate.outputs.release_version }}
@@ -175,17 +187,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run release
-      - name: Verify and attach the tested app archive and checksum
+      - name: Verify and attach the tested release assets and checksums
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: ${{ needs.candidate.outputs.release_version }}
         run: |
           set -euo pipefail
-          archive="dist/Sweepdeck-${RELEASE_VERSION}-macOS.zip"
-          checksum="$archive.sha256"
-          (cd dist && shasum -a 256 --check "$(basename "$checksum")")
+          zip="dist/Sweepdeck-${RELEASE_VERSION}-macOS.zip"
+          dmg="dist/Sweepdeck-${RELEASE_VERSION}-macOS.dmg"
+          (cd dist && shasum -a 256 --check "$(basename "$zip").sha256")
+          (cd dist && shasum -a 256 --check "$(basename "$dmg").sha256")
           release_endpoint="repos/${GITHUB_REPOSITORY}/releases/tags/v${RELEASE_VERSION}"
-          for asset in "$archive" "$checksum"; do
+          for asset in \
+            "$zip" \
+            "$zip.sha256" \
+            "$dmg" \
+            "$dmg.sha256"; do
             asset_name="$(basename "$asset")"
             expected_digest="sha256:$(shasum -a 256 "$asset" | awk '{print $1}')"
             remote_digest="$(gh api "$release_endpoint" --jq ".assets[]? | select(.name == \"${asset_name}\") | .digest // empty")"

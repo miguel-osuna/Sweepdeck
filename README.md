@@ -44,6 +44,12 @@ and uses the bounded scan results.
 Its app-only archive includes the Sweepdeck app icon. SHA-256:
 `e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`.
 
+The 0.2.0 release contains a ZIP only. The updated release workflow will add a DMG to
+the next release, with an Applications shortcut and a small installation guide for
+drag-to-Applications setup. It will also publish a separate SHA-256 sidecar. The DMG
+does not change Gatekeeper's first-launch check described below. Homebrew will
+continue to use the app-only ZIP.
+
 The owner-managed Homebrew tap is maintained at
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap). The
 Sweepdeck cask was published in [tap PR #2](https://github.com/miguel-osuna/homebrew-tap/pull/2).
@@ -89,9 +95,9 @@ and you trust that source, macOS provides a one-time, per-app approval:
 
 macOS saves this exception for Sweepdeck, so later launches work by double-clicking
 the app. This does not turn off Gatekeeper for other apps. Apple's [security
-guidance](https://support.apple.com/en-au/102445) explains the approval. A DMG would
-change how the app is copied into Applications, but it would not add an Apple-issued
-Developer ID signature or notarization ticket, so it would not remove this warning.
+guidance](https://support.apple.com/en-au/102445) explains the approval. The new DMG
+will simplify copying the app into Applications, but it will not add an Apple-issued
+Developer ID signature or notarization ticket, so it will not remove this warning.
 Removing this malware-verification warning for all users requires Developer ID signing
 and notarization through the Apple Developer Program, currently USD 99 per year in the
 United States. macOS may still show its ordinary first-download confirmation.

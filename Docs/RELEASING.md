@@ -16,6 +16,15 @@ job uses the protected environment and pauses for reviewer approval before creat
 the tag and GitHub Release. If there is no release-worthy commit, it exits without
 publishing.
 
+Starting with the next published version, the workflow also packages a direct-download
+DMG from the tested ZIP and writes a separate SHA-256 sidecar. The disposable Apple
+Silicon candidate job verifies both checksums, mounts the DMG read-only, and checks the
+app version, signature, icon, Applications shortcut, and `INSTALL.txt`. It does not
+simulate a downloaded DMG's quarantine state or verify a post-approval launch; the
+Homebrew ZIP check remains the first-launch Gatekeeper evidence. The publish job
+attaches the ZIP, ZIP checksum, DMG, and DMG checksum only after candidate checks pass
+and the required release reviewer approves.
+
 The first publish creates and validates the `v0.0.0` analysis baseline at the
 repository's root commit, then requires semantic-release to propose exactly `0.1.0`.
 Later versions follow Conventional Commit rules. Release tooling is not published as
@@ -39,6 +48,12 @@ were independently downloaded and verified against the same SHA-256:
 `e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`.
 The first-launch screen showed the Gatekeeper malware-verification warning; the check
 did not approve the app or verify a successful post-approval launch.
+
+The 0.2.0 release contains only the app ZIP and its checksum. The DMG is an optional
+direct-download format; the cask continues to use the app-only ZIP. The DMG will
+contain the same app, an Applications shortcut, and `INSTALL.txt` with manual install
+and Gatekeeper instructions. It improves drag-to-Applications setup but does not add
+signing or notarization or remove the first-launch approval.
 
 ## Homebrew distribution
 

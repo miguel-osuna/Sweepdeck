@@ -101,6 +101,13 @@ organization fee waivers (see [membership
 terms](https://developer.apple.com/help/account/membership/program-enrollment)).
 macOS may still ask users to confirm opening a downloaded app the first time.
 
+The 0.2.0 release has only a ZIP. The release-workflow change under review adds an
+optional DMG to future releases. Its disposable candidate check will inspect the
+checksum, mount the image read-only, and verify the app bundle, version, icon,
+Applications shortcut, and install guide. It will not claim to simulate a browser
+download's quarantine state or a successful DMG first launch. The Homebrew ZIP check
+continues to report the observed Gatekeeper warning without approving the app.
+
 ## Local workspace
 
 Observed host: macOS 26.6.2, arm64, Swift 6.2, SDK 26.0, Command Line Tools selected.

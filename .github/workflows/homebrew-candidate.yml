@@ -5,6 +5,8 @@ on:
       - ".github/workflows/homebrew-candidate.yml"
       - ".github/workflows/release.yml"
       - "scripts/build-app.sh"
+      - "scripts/package-dmg.sh"
+      - "scripts/test-dmg-candidate.sh"
       - "scripts/test-homebrew-candidate.sh"
 permissions:
   contents: read
@@ -21,6 +23,12 @@ jobs:
           SWEEPDECK_VERSION: 0.1.0
           SWEEPDECK_BUILD_STAGE: ${{ runner.temp }}/SweepdeckBuild-stage
         run: bash scripts/build-app.sh
+      - name: Package the direct-download DMG
+        run: bash scripts/package-dmg.sh 0.1.0 dist/Sweepdeck-0.1.0-macOS.zip
+      - name: Inspect the versioned DMG on the disposable runner
+        env:
+          SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' && runner.arch == 'ARM64' }}
+        run: bash scripts/test-dmg-candidate.sh 0.1.0 dist/Sweepdeck-0.1.0-macOS.dmg
       - name: Validate Homebrew install and report first-launch approval behavior
         env:
           SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' && runner.arch == 'ARM64' }}
