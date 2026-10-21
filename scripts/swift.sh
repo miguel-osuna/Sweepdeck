@@ -73,7 +73,7 @@ if [[ "$command_name" == "test" || "$command_name" == "build" ]]; then
             --out-dir "$CARGO_TARGET_DIR/lint" rust/sweepdeck-accelerator/src/lib.rs
     else
         "$cargo_command" fmt --manifest-path rust/sweepdeck-accelerator/Cargo.toml -- --check
-        "$cargo_command" clippy --manifest-path rust/sweepdeck-accelerator/Cargo.toml --all-targets --locked -- -D warnings
+        "$cargo_command" clippy --manifest-path rust/sweepdeck-accelerator/Cargo.toml --release --all-targets --locked -- -D warnings
     fi
     if [[ "$command_name" == "test" ]]; then
         "$cargo_command" test --manifest-path rust/sweepdeck-accelerator/Cargo.toml --locked
