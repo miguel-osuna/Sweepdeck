@@ -14,3 +14,16 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      semantic-release-tooling:
+        patterns:
+          - "semantic-release"
+          - "@semantic-release/*"
+    commit-message:
+      prefix: chore
+      include: scope

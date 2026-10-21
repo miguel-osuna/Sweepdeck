@@ -1,0 +1,130 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Calculate a release and continue to the protected publish step"
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: sweepdeck-release
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: inputs.publish == true
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require main and explicit readiness
+        env:
+          RELEASE_READY: ${{ vars.RELEASE_READY }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+            echo "Releases can only run from main." >&2
+            exit 1
+          }
+          [[ "$RELEASE_READY" == "true" ]] || {
+            echo "Set the RELEASE_READY repository variable only after release checks are complete." >&2
+            exit 1
+          }
+      - name: Require a reviewer-protected release environment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/check-release-environment.sh
+
+  verify:
+    needs: gate
+    if: inputs.publish == true
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  candidate:
+    needs: [gate, verify]
+    if: inputs.publish == true
+    runs-on: macos-15
+    permissions:
+      contents: write
+    outputs:
+      release_version: ${{ steps.preflight.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Create first-release baseline when needed
+        run: bash scripts/ensure-release-baseline.sh
+      - name: Calculate and validate the candidate version
+        id: preflight
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/semantic-release-dry-run.log"
+          npm run release:dry-run 2>&1 | tee "$log"
+          version="$(sed -nE 's/.*The next release version is ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "$log" | tail -n 1)"
+          if [[ -z "$version" ]]; then
+            if grep -Fq "There are no relevant changes, so no new version is released" "$log"; then
+              echo "version=" >> "$GITHUB_OUTPUT"
+              echo "No Conventional Commit requires a release."
+              exit 0
+            fi
+            echo "Could not determine the next release version from semantic-release." >&2
+            exit 1
+          fi
+          bash scripts/validate-release-version.sh "$version"
+          other_release_tags="$(git tag --list 'v[0-9]*' | grep -Ev '^v0\.0\.0$' || true)"
+          if [[ -z "$other_release_tags" && "$version" != "0.1.0" ]]; then
+            echo "The first public release must be 0.1.0; semantic-release proposed $version." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Build a versioned release candidate
+        if: steps.preflight.outputs.version != ''
+        env:
+          SWEEPDECK_VERSION: ${{ steps.preflight.outputs.version }}
+        run: bash scripts/build-app.sh
+      - name: Keep the candidate available for manual QA
+        if: steps.preflight.outputs.version != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Sweepdeck-release-candidate-${{ steps.preflight.outputs.version }}
+          path: dist/Sweepdeck-macOS.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [candidate]
+    if: needs.candidate.outputs.release_version != ''
+    runs-on: macos-15
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Publish the reviewed version and release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release

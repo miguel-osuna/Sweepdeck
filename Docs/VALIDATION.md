@@ -1,15 +1,19 @@
 # Validation record
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
-Command Line Tools but no active full Xcode installation. A previous full local
-run passed 43 Swift tests, measured 581/680 executable `SweepdeckCore` lines
-(85.4%) and built and verified the release bundle. The current feature-branch run
-[#39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011)
-passed all 47 tests, measured 693/794 executable lines (87.3%), and built the app
-on Swift 6.2/macOS 15, Swift 6.4.1/macOS 26 and Xcode 27 preview/macOS 27. It
-also verified Swift cache relocation on all three lanes. The earlier macOS 15
-test-host signal-11 flake on run #92 was followed by successful targeted and full
-runs. Interactive UI behavior was not checked on any CI runner.
+Command Line Tools but no active full Xcode installation. The previous feature
+head `6b07ebe` passed all 47 tests, measured 693/794 executable `SweepdeckCore`
+lines (87.3%), and built on Swift 6.2/macOS 15, Swift 6.4.1/macOS 26 and Xcode 27
+preview/macOS 27 in [run #39553526011](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39553526011).
+That run also verified Swift cache relocation on all three lanes. The feature
+branch now includes the two release-metadata tests and the release-pipeline merge;
+CI for that combined head is pending. The focused appearance test and all 8 Rust
+tests pass locally, and `scripts/build-app.sh` succeeds with
+`SWEEPDECK_VERSION=0.1.0`. On this host, the full Swift test command exits with
+signal 11 in `swiftpm-testing-helper` after the appearance test passes and the
+next test starts; both tests pass when run separately. This host-specific result
+does not replace CI for the merged tree. Interactive UI behavior was not checked
+on a CI runner.
 
 ## Automated checks
 
@@ -26,7 +30,7 @@ runs. Interactive UI behavior was not checked on any CI runner.
   case-insensitive path/category filtering, all sort modes and tie ordering, and
   verify that progress callbacks run off the main thread and reach the final
   candidate count. Appearance tests cover stored-value compatibility, System/Light/Dark
-  transitions, and pixel equality between Dark → System Light and forced Light.
+  transitions, and sampled rendered equality between Dark → System Light and forced Light.
   Disk Explorer tests cover root/folder aggregation, nested files,
   extension/size/age filters, authorized-root boundaries, and batched progress off
   the main thread over 3,000 entries. Four `ResultPageTests` cover empty and
@@ -121,14 +125,16 @@ under `/private/tmp/SweepdeckUIFixture`.
   persisted across samples, but does not establish the exact duration or whether
   the recording used the current production build. The root SwiftUI view applies
   explicit Light/Dark choices to its `NSWindow`; System clears that window
-  override. The hosted split-view
-  regression checks both SwiftUI schemes and AppKit effective appearance through
-  Dark → System Light, system appearance changes, and forced Light. It also
-  compares rendered 1,200 × 800 bitmap output: Dark must differ from Light, and
-  System Light reached after Dark must match forced Light pixel-for-pixel. The
-  full local 43-test run passes, and [CI run #103](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39531416616)
+  override. The hosted split-view regression checks both SwiftUI schemes and AppKit
+  effective appearance through Dark → System Light, system appearance changes,
+  and forced Light. It captures a 1,200 × 800 bitmap and compares a grid sampled
+  every 8 pixels: Dark must differ from Light, and System Light reached after
+  Dark must match forced Light at every sampled point. Sampling reduced the
+  focused test from 29.5 seconds to 0.86 seconds on this host. At that earlier
+  checkpoint, the full local 43-test run passed, and
+  [CI run #103](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39531416616)
   passed tests, the 80% core coverage gate, and release builds on all three
-  macOS lanes. The pixel test is an in-memory rendering comparison, not a
+  macOS lanes. The image comparison is an in-memory rendering check, not a
   checked-in golden screenshot or a capture of the full production app. The
   follow-up process check found no running Sweepdeck GUI app; the Orca CLI failed
   with `Unable to determine Orca.app path from symlink: /usr/local/bin/orca`, so
