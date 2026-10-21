@@ -137,7 +137,15 @@ The app bundle build was attempted after adding the icon resource but stopped be
 compilation because Rust 1.99.1, selected by `rust-toolchain.toml`, is not installed in
 this workspace. No Rust toolchain, Xcode/Command Line Tools, macOS settings, or signing
 identity was changed. The 0.1.0 source build passed in CI, and the icon-bearing build
-passed in PR #12 and the 0.2.0 release run. Local Homebrew and taps were not modified.
+passed in PR #12 and the 0.2.0 release run. After the 0.3.0 tap update was
+published, this host's local tap checkout was fast-forwarded and the existing
+cask was upgraded from 0.2.0 to 0.3.0 with:
+
+`HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade --cask miguel-osuna/tap/sweepdeck`.
+
+Homebrew printed the approval caveat. The installed bundle reports version
+0.3.0 and retains `com.apple.quarantine`. No other casks or formulae were
+changed, and the app was not opened or approved locally.
 
 ## Verification details
 
