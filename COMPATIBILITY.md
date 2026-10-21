@@ -27,9 +27,9 @@ The owner tap's default branch had no `Casks/sweepdeck.rb`; its open PR contains
 validation workflow and product-neutral repository description. Token availability
 does not make an unpublished install command usable.
 
-The 0.1.0 candidate check, [Actions run 39642233429](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39642233429),
+The post-rebase 0.1.0 candidate check, [Actions run 39644553243](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39644553243),
 built the release-shaped 0.1.0 archive and verified its sidecar SHA-256
-(`9741ddc4482f240704113b93d8d51e031a28d343fd8f1f44cc101bf6a694b269`). On the
+(`dc0846c0c32722d13ce2587d3f49ee1cd5224c7d2558e4640b1941e63126440e`). On the
 disposable macOS 26 Apple Silicon runner, Homebrew strict audit and style passed;
 install, bundle/version inspection, quarantine inspection, and uninstall also passed.
 The installed artifact was only `Sweepdeck.app`; its executable was arm64 and the
@@ -42,9 +42,10 @@ Gatekeeper's `spctl --assess --type execute --verbose=4` rejected the quarantine
 **Done** buttons. Launch Services timed out after 15 seconds (status 124), and the
 Sweepdeck process was observed with its temporary state directory argument. Homebrew
 uninstall removed `/Applications/Sweepdeck.app`. The runner did not approve the app or
-verify a successful launch after approval. The screen is retained in the Actions run's
-one-day artifact. This was a temporary local cask using a candidate ZIP; no public
-release asset or tap cask was installed. The earlier style failure in
+verify a successful launch after approval. Both early and final screenshots show the
+same warning and are retained in the Actions run's one-day artifact. This was a temporary
+local cask using a candidate ZIP; no public release asset or tap cask was installed. The
+earlier style failure in
 [run 39639700468](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39639700468)
 was caused by stanza order in the generated cask and was corrected before the passing
 run above.
