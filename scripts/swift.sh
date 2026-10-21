@@ -25,6 +25,8 @@ if [[ -f "$private_interface" ]] && grep -q 'swiftLanguageModes' "$public_interf
 fi
 
 extra_flags=()
+testing_support_flags=()
+testing_flags=()
 legacy_map="$toolchain_usr/include/swift/module.modulemap"
 current_map="$toolchain_usr/include/swift/bridging.modulemap"
 if [[ -f "$legacy_map" && -f "$current_map" ]] && grep -q 'module SwiftBridging' "$legacy_map" && grep -q 'module SwiftBridging' "$current_map"; then
@@ -83,10 +85,57 @@ fi
 
 frameworks="$(dirname "$toolchain_usr")/Library/Developer/Frameworks"
 if [[ "$command_name" == "test" && -d "$frameworks/Testing.framework" ]]; then
-    extra_flags+=(--disable-xctest --enable-swift-testing --no-parallel -Xswiftc -F -Xswiftc "$frameworks" -Xlinker -rpath -Xlinker "$frameworks")
+    testing_flags+=(--disable-xctest --enable-swift-testing --no-parallel)
+    testing_support_flags+=(-Xswiftc -F -Xswiftc "$frameworks" -Xlinker -rpath -Xlinker "$frameworks")
     if [[ -d "$frameworks/_Testing_Foundation.framework" && ! -d "$frameworks/_Testing_Foundation.framework/Modules" ]]; then
-        extra_flags+=(-Xswiftc -Xfrontend -Xswiftc -disable-cross-import-overlays)
+        testing_support_flags+=(-Xswiftc -Xfrontend -Xswiftc -disable-cross-import-overlays)
         echo "Disabling missing Testing/Foundation overlay for this test build." >&2
     fi
 fi
-exec swift "$command_name" --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security ${extra_flags[@]+"${extra_flags[@]}"} "$@"
+
+# Run the AppKit appearance regression in its own Swift Testing process. This
+# keeps it separate from the core suite and avoids XCTest's crashing AppKit
+# teardown path on hosted macOS runners.
+if [[ "$command_name" == "test" ]]; then
+    has_explicit_selection=false
+    has_coverage=false
+    expect_filter_value=false
+    for argument in "$@"; do
+        case "$argument" in
+            --filter)
+                has_explicit_selection=true
+                expect_filter_value=true
+                ;;
+            --filter=*)
+                has_explicit_selection=true
+                ;;
+            --test-product|--test-product=*|--list-tests|--help|-h|list|help) has_explicit_selection=true ;;
+            --enable-code-coverage) has_coverage=true ;;
+            *)
+                if [[ "$expect_filter_value" == true ]]; then
+                    expect_filter_value=false
+                fi
+                ;;
+        esac
+    done
+
+    if [[ "$has_explicit_selection" == false ]]; then
+        test_targets=(SweepdeckCoreTests SweepdeckAppearanceTests)
+        if [[ "$has_coverage" == true ]]; then
+            # SwiftPM writes one coverage report per invocation; keep the
+            # core suite last so the project's core coverage gate sees it.
+            test_targets=(SweepdeckAppearanceTests SweepdeckCoreTests)
+        fi
+        for test_target in "${test_targets[@]}"; do
+            echo "Running $test_target in an isolated Swift Testing process." >&2
+            swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
+                ${extra_flags[@]+"${extra_flags[@]}"} ${testing_support_flags[@]+"${testing_support_flags[@]}"} \
+                ${testing_flags[@]+"${testing_flags[@]}"} --filter "$test_target" "$@"
+        done
+        exit 0
+    fi
+fi
+
+exec swift "$command_name" --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
+    ${extra_flags[@]+"${extra_flags[@]}"} ${testing_support_flags[@]+"${testing_support_flags[@]}"} \
+    ${testing_flags[@]+"${testing_flags[@]}"} "$@"
