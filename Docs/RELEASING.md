@@ -90,6 +90,13 @@ present, `spctl` rejected the app (status 3), Launch Services timed out after 15
 and no app process appeared. This checksum is from the candidate run, not a public
 release asset.
 
+An eighth candidate check, [Actions run 39629627625](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39629627625),
+again built the release-shaped 0.1.0 archive and passed Homebrew strict audit, style,
+install, bundle inspection, and uninstall on the disposable Apple Silicon runner.
+Homebrew quarantine remained present; `spctl` rejected the app (status 3), Launch
+Services timed out after 15 seconds, and no app process appeared. No GitHub Release
+asset or public cask was published.
+
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
 `Casks/sweepdeck.rb`. The primary command is
@@ -110,7 +117,7 @@ PR is merged. No cross-repository Actions token is required for this manual proc
 
 Neither App Store submission nor notarization is required by the cask format. They
 remain Gatekeeper compatibility decisions. The current app build is ad-hoc signed,
-and at least seven quarantined candidates were rejected by Gatekeeper on a disposable Apple
+and eight quarantined candidates were rejected by Gatekeeper on a disposable Apple
 Silicon runner. Do not mark the release ready or publish the cask unless a future
 supported build passes the same checks. Never remove quarantine or bypass macOS
 security controls.

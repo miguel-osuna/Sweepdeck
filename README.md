@@ -50,7 +50,7 @@ submission and notarization are not cask-format requirements. In the disposable
 macOS 26 Apple Silicon check, Homebrew audit, style, install, bundle inspection, and
 uninstall passed, but `spctl` rejected the quarantined app and Launch Services did
 not return within 15 seconds; no app process appeared. Repeated candidate runs,
-including [post-rebase run 39628624784](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624784),
+including [latest run 39629627625](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39629627625),
 reproduced the same result. Developer ID signing and notarization will not be added
 for this release attempt, so the cask and public release remain unpublished and not
 release-ready. See [compatibility evidence](COMPATIBILITY.md).

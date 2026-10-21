@@ -68,6 +68,12 @@ audit/style, install, bundle inspection, and uninstall passed; quarantine remain
 intact, Gatekeeper rejected the app (status 3), Launch Services timed out after
 15 seconds, and no app process appeared. The checksum is for this candidate only.
 
+An eighth check in [candidate run 39629627625](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39629627625)
+again built the release-shaped archive and passed Homebrew audit, style, install,
+bundle inspection, and uninstall on the disposable Apple Silicon runner. Quarantine
+remained intact, Gatekeeper rejected the app (status 3), Launch Services timed out
+after 15 seconds, and no app process appeared. No public release asset or cask exists.
+
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable
 cask artifacts to pass its Gatekeeper checks. If the quarantined candidate fails,
