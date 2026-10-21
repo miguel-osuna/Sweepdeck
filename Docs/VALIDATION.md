@@ -1,20 +1,18 @@
 # Validation record
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
-Command Line Tools but no active full Xcode installation. The latest local run
-passed 43 Swift tests, measured 581/680 executable `SweepdeckCore` lines (85.4%)
-and built and verified the release bundle. GitHub Actions run
-[#94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559) passed
-all three platform lanes: Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`,
-and Swift 6.4 on macOS 27.0.1 with Xcode 27.0 preview. Each lane passed all 43
-tests, the 80% coverage floor and the release build. The first macOS 15 attempt
-on earlier run #92 reported signal 11 after all 43 tests passed; its targeted
-rerun succeeded, and the later run #94 passed all jobs. Continue monitoring this
-test-host flake. Interactive UI behavior was not checked on any CI runner.
+Command Line Tools but no active full Xcode installation. A previous full local
+run passed 43 Swift tests, measured 581/680 executable `SweepdeckCore` lines
+(85.4%) and built and verified the release bundle. The current feature-branch run
+[#39551995676](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39551995676)
+passed all 47 tests, measured 693/794 executable lines (87.3%), and built the app
+on Swift 6.2/macOS 15, Swift 6.4.1/macOS 26 and Xcode 27 preview/macOS 27. The
+earlier macOS 15 test-host signal-11 flake on run #92 was followed by successful
+targeted and full runs. Interactive UI behavior was not checked on any CI runner.
 
 ## Automated checks
 
-- `bash scripts/swift.sh test --enable-code-coverage` passed locally: 43 Swift Testing tests in four suites. Coverage
+- The previous full local `bash scripts/swift.sh test --enable-code-coverage` run passed 43 Swift Testing tests in four suites. Coverage
   includes scanning, cancellation and result limits; path/symlink/repository and
   metadata safety; overlapping-root deduplication; cleanup preview, stale-item
   refusal, fake Trash and partial results; full preference/history round-trip
@@ -23,7 +21,7 @@ test-host flake. Interactive UI behavior was not checked on any CI runner.
   resolved once per directory and that each file retains the same full identity
   snapshot as a fresh filesystem walk. Progress tests cover the final scan
   snapshot plus cleanup success, stale-item rejection, partial failure,
-  cancellation and batched/final counts. Six CandidateMatcher tests cover
+  cancellation and batched/final counts. Ten CandidateMatcher tests cover
   case-insensitive path/category filtering, all sort modes and tie ordering, and
   verify that progress callbacks run off the main thread and reach the final
   candidate count. Appearance tests cover stored-value compatibility, System/Light/Dark
@@ -33,22 +31,20 @@ test-host flake. Interactive UI behavior was not checked on any CI runner.
   the main thread over 3,000 entries. Four `ResultPageTests` cover empty and
   partial pages, invalid indexes and dimensions, safe very-large ranges, and
   lossless traversal of 25,000 rows while limiting each page to 100.
-- The current coverage-instrumented run measured 581 of 680 executable
-  `SweepdeckCore` source lines covered (85.4%). `DiskExplorerMatcher.swift` has
-  97.1% line coverage. The SwiftUI app target is not included in the SwiftPM test
-  coverage report. CI enforces an 80% `SweepdeckCore` executable-line floor on
-  all three CI platform lanes.
+- The current feature-branch CI run measured 693 of 794 executable `SweepdeckCore`
+  source lines covered (87.3%). `DiskExplorerMatcher.swift` has 97.1% line
+  coverage. The SwiftUI app target is not included in the SwiftPM test coverage
+  report. CI enforces an 80% `SweepdeckCore` executable-line floor on all three
+  platform lanes.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
-- GitHub Actions run [#94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559)
-  passed all 43 tests, the 80% `SweepdeckCore` line-coverage floor and release
-  build with Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`, and Swift 6.4 on
-  macOS 27.0.1 with Xcode 27.0 preview. On earlier run #92, the first `macos-15`
-  test-host process exited with signal 11 after reporting all tests passed; a
-  targeted rerun passed tests, coverage, and build. Run #94 passed all jobs. Keep
-  monitoring the earlier test-host flake. These checks do not verify interactive
-  UI behavior.
+- GitHub Actions run
+  [#39551995676](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39551995676)
+  passed all 47 tests, the 80% `SweepdeckCore` line-coverage floor and release
+  build with Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`, and Xcode 27
+  preview on macOS 27. The run measured 87.3% core line coverage. These checks do
+  not verify interactive UI behavior.
 - Standalone CLI smokes used generated fixtures only, but could not verify Trash
   without the app's folder-picker flow: direct `FileManager.trashItem` returned
   Cocoa error 513 / OSStatus -5000 (`afpAccessDenied`), and `MacTrashService`
@@ -163,9 +159,15 @@ the end-to-end test, and Trash was not emptied.
   filter/category/sort pass now runs in nonisolated async SweepdeckCore work,
   and its progress callback is verified to run off the main thread. This proves
   executor isolation, not end-to-end responsiveness or faster total throughput.
-  A Swift sort already
-  in progress cannot be interrupted, but its result is discarded if the search
-  task was cancelled; the bounded 25,000-record scan cap limits that work.
+  A Swift or Rust sort already in progress cannot be interrupted, but its result
+  is discarded if the search task was cancelled; the bounded 25,000-record scan
+  cap limits that work.
+- An opt-in benchmark on this host sorted 3,000 synthetic ASCII candidates by
+  size in a median 8.52 ms through the Rust FFI path versus 36.95 ms with Swift
+  `Array.sorted` (11 samples, including Rust-side row/path marshaling and result
+  remapping). This is an isolated sort measurement on one machine, not a scan,
+  filtering, or end-to-end UI benchmark; rerun it on other hardware before making
+  broader performance claims.
 - Disk Explorer aggregation previously filtered, grouped and sorted the full scan
   synchronously while SwiftUI evaluated the view. It now runs in nonisolated async
   core work, checks cancellation, and shows progress while hiding results for old
@@ -188,9 +190,10 @@ the end-to-end test, and Trash was not emptied.
   plausible sources of overhead, but this trial did not profile the difference.
   It used the latest stable [Rust 1.99.1](https://blog.rust-lang.org/2026/10/15/Rust-1.99.1/)
   and [libc 0.2.191](https://docs.rs/libc/0.2.191/libc/). The prototype was
-  discarded; the production scanner remains Swift, where the measured ancestry
-  cache and native resource checks already improve scan performance without a
-  second toolchain.
+  discarded. The production scanner remains Swift; Rust is limited to the
+  separately measured large-result sorting path. The ancestry cache and native
+  resource checks improve scanning without routing filesystem discovery through
+  the slower Rust prototype.
 - Cleanup still revalidates the selected root, ancestry, file identity/metadata,
   exclusions and rule before Trash, including inside coordinated access. The
   remaining non-atomic pathname race against an uncoordinated local process is
