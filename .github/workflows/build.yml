@@ -9,6 +9,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
+      - name: Test Swift build cache relocation
+        run: bash scripts/test-swift-build-cache.sh
       - name: Select installed Swift 6.2 Xcode
         shell: bash
         run: |
@@ -41,6 +43,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
+      - name: Test Swift build cache relocation
+        run: bash scripts/test-swift-build-cache.sh
       - name: Install Swift 6.4.1 toolchain
         shell: bash
         run: |
@@ -72,6 +76,8 @@ jobs:
         run: sw_vers && xcodebuild -version && swift --version
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
+      - name: Test Swift build cache relocation
+        run: bash scripts/test-swift-build-cache.sh
       - run: bash scripts/swift.sh test --enable-code-coverage
       - name: Enforce SweepdeckCore line coverage floor
         run: |

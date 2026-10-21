@@ -1,8 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+repo_root="$(pwd -P)"
+script_dir="$(cd "$(dirname "$0")" && pwd -P)"
+source "$script_dir/swift-build-cache.sh"
+prepare_swift_build_cache "$repo_root/.build" "$repo_root"
 mkdir -p .build/local-toolchain
-export CLANG_MODULE_CACHE_PATH="$PWD/.build/clang-cache"
+export CLANG_MODULE_CACHE_PATH="$repo_root/.build/clang-cache"
 
 # Some CLT upgrades leave incompatible private interfaces and duplicate module maps.
 # Work around the detected files locally; never edit the installed toolchain.
