@@ -22,12 +22,14 @@ jobs:
           SWEEPDECK_BUILD_STAGE: ${{ runner.temp }}/SweepdeckBuild-stage
         run: bash scripts/build-app.sh
       - name: Validate Homebrew install and report first-launch approval behavior
+        env:
+          SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' && runner.arch == 'ARM64' }}
         run: bash scripts/test-homebrew-candidate.sh 0.1.0 dist/Sweepdeck-0.1.0-macOS.zip
       - name: Preserve disposable first-launch screen for review
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: Sweepdeck-first-launch-screen-${{ github.run_id }}
-          path: ${{ runner.temp }}/Sweepdeck-first-launch-*.png
+          name: Sweepdeck-first-launch-screen-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/Sweepdeck-first-launch-${{ github.run_id }}-${{ github.run_attempt }}-*.png
           if-no-files-found: ignore
           retention-days: 1

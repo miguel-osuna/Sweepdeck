@@ -19,41 +19,81 @@ actual_sha="$(shasum -a 256 "$archive" | awk '{print $1}')"
   echo "The candidate archive does not match its recorded SHA-256." >&2
   exit 65
 }
+[[ "${GITHUB_ACTIONS:-}" == "true" && "${SWEEPDECK_DISPOSABLE_RUNNER:-}" == "true" ]] || {
+  echo "This check installs and uninstalls a cask; run it only on the disposable GitHub-hosted Apple Silicon runner." >&2
+  exit 1
+}
+[[ -n "${RUNNER_TEMP:-}" && -d "$RUNNER_TEMP" && -w "$RUNNER_TEMP" ]] || {
+  echo "A writable GitHub Actions RUNNER_TEMP directory is required." >&2
+  exit 1
+}
+[[ "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ && "${GITHUB_RUN_ATTEMPT:-}" =~ ^[0-9]+$ ]] || {
+  echo "A GitHub Actions run ID and attempt are required to isolate test artifacts." >&2
+  exit 1
+}
 [[ "$(uname -m)" == "arm64" ]] || {
   echo "Release quarantine checks require an Apple Silicon runner." >&2
   exit 1
 }
-brew update
-export HOMEBREW_NO_AUTO_UPDATE=1
-
-temporary_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/sweepdeck-homebrew.XXXXXX")"
-tap_dir="$temporary_dir/homebrew-tap"
-cask_path="$tap_dir/Casks/sweepdeck.rb"
-temporary_state="$temporary_dir/state"
 app_path="/Applications/Sweepdeck.app"
 tap_name="miguel-osuna/tap"
 cask_name="$tap_name/sweepdeck"
-first_launch_screenshot_dir="${RUNNER_TEMP:-/tmp}"
+if [[ -e "$app_path" ]] || brew list --cask --full-name 2>/dev/null | grep -Fxq "$cask_name"; then
+  echo "The disposable runner already has Sweepdeck installed; refusing to change its existing state." >&2
+  exit 1
+fi
+if brew tap | grep -Fxq "$tap_name"; then
+  echo "The disposable runner already has $tap_name tapped; refusing to change its existing state." >&2
+  exit 1
+fi
+
+brew update
+export HOMEBREW_NO_AUTO_UPDATE=1
+
+temporary_dir="$(mktemp -d "$RUNNER_TEMP/sweepdeck-homebrew.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.XXXXXX")"
+tap_dir="$temporary_dir/homebrew-tap"
+cask_path="$tap_dir/Casks/sweepdeck.rb"
+temporary_state="$temporary_dir/state"
+first_launch_screenshot_prefix="$RUNNER_TEMP/Sweepdeck-first-launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 release_url='https://github.com/miguel-osuna/Sweepdeck/releases/download/v#{version}/Sweepdeck-#{version}-macOS.zip'
 open_pid=""
+tap_created=0
+install_started=0
+
+test_app_pids() {
+  local pid process_command
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    process_command="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+    if [[ "$process_command" == *"--sweepdeck-state-directory"* && "$process_command" == *"$temporary_state"* ]]; then
+      printf '%s\n' "$pid"
+    fi
+  done < <(pgrep -x Sweepdeck 2>/dev/null || true)
+}
 
 stop_test_app() {
+  local pid
   if [[ -n "$open_pid" ]]; then
     kill -TERM "$open_pid" >/dev/null 2>&1 || true
   fi
-  pkill -TERM -x Sweepdeck >/dev/null 2>&1 || true
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] && kill -TERM "$pid" >/dev/null 2>&1 || true
+  done < <(test_app_pids)
 }
 
 finish() {
   result=$?
   set +e
   stop_test_app
-  if brew list --cask --full-name 2>/dev/null | grep -Fxq "$cask_name"; then
+  if [[ "$install_started" -eq 1 ]] && brew list --cask --full-name 2>/dev/null | grep -Fxq "$cask_name"; then
     brew uninstall --cask "$cask_name"
   fi
-  if [[ -e "$app_path" ]]; then
+  if [[ "$install_started" -eq 1 && -e "$app_path" ]]; then
     echo "Homebrew uninstall left $app_path behind on the disposable runner." >&2
     result=1
+  fi
+  if [[ "$tap_created" -eq 1 ]]; then
+    brew untap --force "$tap_name"
   fi
   rm -rf "$temporary_dir"
   exit "$result"
@@ -62,11 +102,10 @@ trap finish EXIT
 
 capture_first_launch_screenshot() {
   local stage="$1"
-  local screenshot="$first_launch_screenshot_dir/Sweepdeck-first-launch-$stage.png"
+  local screenshot="${first_launch_screenshot_prefix}-${stage}.png"
   if screencapture -x "$screenshot" >/dev/null 2>&1 && [[ -s "$screenshot" ]]; then
     echo "Captured the disposable runner's $stage first-launch screen: $screenshot"
   else
-    rm -f "$screenshot"
     echo "The disposable runner did not provide a capturable $stage screen."
   fi
 }
@@ -103,6 +142,7 @@ git -C "$tap_dir" config user.email "sweepdeck-release-validation@users.noreply.
 git -C "$tap_dir" add Casks/sweepdeck.rb
 git -C "$tap_dir" commit --quiet -m "Add Sweepdeck release candidate cask"
 brew tap "$tap_name" "$tap_dir"
+tap_created=1
 brew audit --cask --strict "$cask_name"
 brew style --cask "$cask_name"
 
@@ -120,6 +160,7 @@ RUBY
   echo "$app_path already exists on the disposable runner." >&2
   exit 1
 }
+install_started=1
 brew install --cask "$cask_name"
 brew info --cask "$cask_name"
 brew list --cask --full-name | grep -Fx "$cask_name"
@@ -144,8 +185,6 @@ grep -Fq 'Signature=adhoc' <<<"$signature_info" || {
   echo "Expected the current no-cost build to use an ad-hoc signature." >&2
   exit 1
 }
-rm -f "$first_launch_screenshot_dir"/Sweepdeck-first-launch-*.png
-
 set +e
 spctl --assess --type execute --verbose=4 "$app_path" >"$temporary_dir/gatekeeper.txt" 2>&1
 gatekeeper_status=$?
@@ -176,9 +215,9 @@ if [[ -n "$open_pid" ]]; then
   open_pid=""
 fi
 sleep 5
-if pgrep -x Sweepdeck >/dev/null 2>&1; then
+if [[ -n "$(test_app_pids)" ]]; then
   launch_status=0
-  process_id="$(pgrep -x Sweepdeck | head -n 1)"
+  process_id="$(test_app_pids | head -n 1)"
   process_command="$(ps -p "$process_id" -o command=)"
   printf 'Sweepdeck process: %s\n' "$process_command"
   [[ "$process_command" == *"--sweepdeck-state-directory"* && "$process_command" == *"$temporary_state"* ]] || {
@@ -211,16 +250,17 @@ else
 fi
 
 if [[ "$launch_status" -eq 0 ]]; then
-  pkill -TERM -x Sweepdeck
+  stop_test_app
   for _ in {1..10}; do
-    pgrep -x Sweepdeck >/dev/null 2>&1 || break
-    sleep 1
+    [[ -z "$(test_app_pids)" ]] || { sleep 1; continue; }
+    break
   done
-  if pgrep -x Sweepdeck >/dev/null 2>&1; then
+  if [[ -n "$(test_app_pids)" ]]; then
     echo "Sweepdeck did not stop after the first-launch check." >&2
     exit 1
   fi
 fi
 brew uninstall --cask "$cask_name"
+install_started=0
 [[ ! -e "$app_path" ]]
 echo "Homebrew candidate audit, style, install, quarantine, Gatekeeper report, and uninstall checks completed."
