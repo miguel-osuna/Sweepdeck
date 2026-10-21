@@ -40,19 +40,22 @@ and uses the bounded scan results.
 
 ## Download and Homebrew
 
-[Version 0.2.0 is available on GitHub Releases](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.2.0).
-Its app-only archive includes the Sweepdeck app icon. SHA-256:
-`e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`.
+[Version 0.3.0 is available on GitHub Releases](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.3.0).
+It includes an app-only ZIP and an optional direct-download DMG. Each asset has a
+published SHA-256 sidecar. The independently verified SHA-256 values are:
 
-The 0.2.0 release contains a ZIP only. The updated release workflow will add a DMG to
-the next release, with an Applications shortcut and a small installation guide for
-drag-to-Applications setup. It will also publish a separate SHA-256 sidecar. The DMG
-does not change Gatekeeper's first-launch check described below. Homebrew will
-continue to use the app-only ZIP.
+- ZIP: `ba4c944c4a128a508465b0c7659c60359220c1585da7f6c0f89c4072141ccf6e`
+- DMG: `62e81604c21fe34be3900a1753a9ee6cfb55591edfb0fba70eb486f5d41853c4`
+
+The [DMG download](https://github.com/miguel-osuna/Sweepdeck/releases/download/v0.3.0/Sweepdeck-0.3.0-macOS.dmg)
+contains the same app, an Applications shortcut, and `INSTALL.txt` for drag-to-Applications
+setup. It does not change Gatekeeper's first-launch check described below. Homebrew
+continues to install the app-only ZIP.
 
 The owner-managed Homebrew tap is maintained at
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap). The
-Sweepdeck cask was published in [tap PR #2](https://github.com/miguel-osuna/homebrew-tap/pull/2).
+Sweepdeck cask was published in [tap PR #2](https://github.com/miguel-osuna/homebrew-tap/pull/2)
+and updated to 0.3.0 in [tap PR #4](https://github.com/miguel-osuna/homebrew-tap/pull/4).
 Install with:
 
 ```sh
@@ -81,9 +84,10 @@ open and said Apple could not verify Sweepdeck is free of malware. The dialog of
 **Move to Trash** or **Done**. Homebrew preserves quarantine, and the cask does not
 bypass Gatekeeper or automate an approval.
 
-The 0.2.0 release's [captured first-launch screen](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890)
+The 0.3.0 release's [captured first-launch screen](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39686586148)
 shows the same warning. That check did not approve the app or verify a successful
-post-approval launch.
+post-approval launch. The disposable workflow inspected the DMG layout but did not
+download the DMG or test its quarantine/first-launch behavior separately.
 
 If you downloaded Sweepdeck from the official release or installed it from the tap,
 and you trust that source, macOS provides a one-time, per-app approval:
@@ -95,8 +99,8 @@ and you trust that source, macOS provides a one-time, per-app approval:
 
 macOS saves this exception for Sweepdeck, so later launches work by double-clicking
 the app. This does not turn off Gatekeeper for other apps. Apple's [security
-guidance](https://support.apple.com/en-au/102445) explains the approval. The new DMG
-will simplify copying the app into Applications, but it will not add an Apple-issued
+guidance](https://support.apple.com/en-au/102445) explains the approval. The DMG
+simplifies copying the app into Applications, but it does not add an Apple-issued
 Developer ID signature or notarization ticket, so it will not remove this warning.
 Removing this malware-verification warning for all users requires Developer ID signing
 and notarization through the Apple Developer Program, currently USD 99 per year in the
