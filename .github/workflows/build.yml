@@ -57,6 +57,9 @@ jobs:
           echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
           exit 1
       - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Report macOS test crash stacks
+        if: failure()
+        run: python3 scripts/report-macos-test-crashes.py
       - name: Enforce SweepdeckCore line coverage floor
         run: |
           coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
@@ -95,6 +98,9 @@ jobs:
           echo "$toolchain/usr/bin" >> "$GITHUB_PATH"
           "$toolchain/usr/bin/swift" --version
       - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Report macOS test crash stacks
+        if: failure()
+        run: python3 scripts/report-macos-test-crashes.py
       - name: Enforce SweepdeckCore line coverage floor
         run: |
           coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
@@ -116,6 +122,9 @@ jobs:
       - name: Test Swift build cache relocation
         run: bash scripts/test-swift-build-cache.sh
       - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Report macOS test crash stacks
+        if: failure()
+        run: python3 scripts/report-macos-test-crashes.py
       - name: Enforce SweepdeckCore line coverage floor
         run: |
           coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
