@@ -18,9 +18,15 @@ private struct CandidateMatcherFixture {
         ancestors = try fileSystem.ancestors(of: seedURL)
     }
 
-    func candidate(_ name: String, size: Int64, modified: Int64, rule: RuleID) -> Candidate {
+    func candidate(
+        _ name: String,
+        size: Int64,
+        modified: Int64,
+        modifiedNanos: Int64 = 0,
+        rule: RuleID
+    ) -> Candidate {
         let metadata = Metadata(identity: seed.identity, size: size, allocated: size,
-                                modifiedSeconds: modified, modifiedNanos: 0,
+                                modifiedSeconds: modified, modifiedNanos: modifiedNanos,
                                 changedSeconds: modified, changedNanos: 0,
                                 links: 1, flags: 0)
         let url = root.url.appendingPathComponent(name)
@@ -124,25 +130,51 @@ struct CandidateMatcherTests {
         #expect(result[.installers, default: []].map(\.url.lastPathComponent) == ["Older.dmg", "Newer.dmg"])
     }
 
+    @Test func oldestFallbackUsesSubsecondModificationTime() async throws {
+        let fixture = try CandidateMatcherFixture()
+        defer { fixture.dispose() }
+        let candidates = [
+            fixture.candidate("z-older.dmg", size: 10, modified: 100, modifiedNanos: 100_000_000, rule: .installers),
+            fixture.candidate("a-newer.dmg", size: 20, modified: 100, modifiedNanos: 200_000_000, rule: .installers)
+        ]
+
+        let result = await CandidateMatcher.match(candidates: candidates, query: "", category: nil, sort: .oldest)
+
+        #expect(result[.installers, default: []].map(\.url.lastPathComponent) == ["z-older.dmg", "a-newer.dmg"])
+    }
+
     @Test func rustBatchSortMatchesSwiftReferenceForLargeASCIIResults() throws {
         let fixture = try CandidateMatcherFixture()
         defer { fixture.dispose() }
-        let candidates = (0..<3_000).map { index in
-            fixture.candidate(
+        var candidates: [Candidate] = []
+        candidates.reserveCapacity(3_000)
+        for index in 0..<3_000 {
+            let size = Int64((index * 7_919) % 257)
+            let modifiedSeconds = Int64(index % 101)
+            let modifiedNanos = Int64((index * 37) % 1_000_000_000)
+            let rule: RuleID = index.isMultiple(of: 2) ? .installers : .oldDownloads
+            candidates.append(fixture.candidate(
                 "item-\(index).dmg",
-                size: Int64((index * 7_919) % 257),
-                modified: Int64(index % 101),
-                rule: index.isMultiple(of: 2) ? .installers : .oldDownloads
-            )
+                size: size,
+                modified: modifiedSeconds,
+                modifiedNanos: modifiedNanos,
+                rule: rule
+            ))
         }
 
-        let expectedBySize = candidates.sorted { left, right in
+        let expectedBySize: [Candidate] = candidates.sorted { (left: Candidate, right: Candidate) in
             left.size == right.size ? left.id < right.id : left.size > right.size
         }
-        let expectedByAge = candidates.sorted { left, right in
-            let leftDate = left.file.metadata.modified
-            let rightDate = right.file.metadata.modified
-            return leftDate == rightDate ? left.id < right.id : leftDate < rightDate
+        let expectedByAge: [Candidate] = candidates.sorted { (left: Candidate, right: Candidate) in
+            let leftMetadata = left.file.metadata
+            let rightMetadata = right.file.metadata
+            if leftMetadata.modifiedSeconds != rightMetadata.modifiedSeconds {
+                return leftMetadata.modifiedSeconds < rightMetadata.modifiedSeconds
+            }
+            if leftMetadata.modifiedNanos != rightMetadata.modifiedNanos {
+                return leftMetadata.modifiedNanos < rightMetadata.modifiedNanos
+            }
+            return left.id < right.id
         }
         let actualBySize = RustCandidateSorter.sorted(candidates, by: .size)
         let actualByAge = RustCandidateSorter.sorted(candidates, by: .oldest)

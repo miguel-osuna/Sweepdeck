@@ -20,17 +20,21 @@ enum RustCandidateSorter {
                   path.count <= Int(UInt32.max) - paths.count else { return nil }
 
             let value: Int64
+            let subvalue: Int64
             switch sort {
             case .size:
                 value = candidate.size
+                subvalue = 0
             case .oldest:
                 value = candidate.file.metadata.modifiedSeconds
+                subvalue = candidate.file.metadata.modifiedNanos
             case .name:
                 return nil
             }
 
             rows.append(SweepdeckSortRow(
                 value: value,
+                subvalue: subvalue,
                 path_offset: UInt32(paths.count),
                 path_length: UInt32(path.count)
             ))

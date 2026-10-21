@@ -52,9 +52,15 @@ public enum CandidateMatcher {
                     let order = left.url.lastPathComponent.localizedStandardCompare(right.url.lastPathComponent)
                     return order == .orderedSame ? left.id < right.id : order == .orderedAscending
                 case .oldest:
-                    let leftDate = left.file.metadata.modified
-                    let rightDate = right.file.metadata.modified
-                    return leftDate == rightDate ? left.id < right.id : leftDate < rightDate
+                    let leftMetadata = left.file.metadata
+                    let rightMetadata = right.file.metadata
+                    if leftMetadata.modifiedSeconds != rightMetadata.modifiedSeconds {
+                        return leftMetadata.modifiedSeconds < rightMetadata.modifiedSeconds
+                    }
+                    if leftMetadata.modifiedNanos != rightMetadata.modifiedNanos {
+                        return leftMetadata.modifiedNanos < rightMetadata.modifiedNanos
+                    }
+                    return left.id < right.id
                 }
             }
         }

@@ -20,7 +20,9 @@ public struct Metadata: Codable, Hashable, Sendable {
     public let changedNanos: Int64
     public let links: UInt16
     public let flags: UInt32
-    public var modified: Date { Date(timeIntervalSince1970: Double(modifiedSeconds)) }
+    public var modified: Date {
+        Date(timeIntervalSince1970: Double(modifiedSeconds) + Double(modifiedNanos) / 1_000_000_000)
+    }
     public var isDirectory: Bool { identity.mode & 0o170000 == 0o040000 }
     public var isRegular: Bool { identity.mode & 0o170000 == 0o100000 }
     public var isSymlink: Bool { identity.mode & 0o170000 == 0o120000 }

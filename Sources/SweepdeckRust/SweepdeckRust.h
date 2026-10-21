@@ -5,12 +5,13 @@
 
 typedef struct {
     int64_t value;
+    int64_t subvalue;
     uint32_t path_offset;
     uint32_t path_length;
 } SweepdeckSortRow;
 
 /*
- Sort candidate indices by value, then by ASCII path bytes.
+ Sort candidate indices by value, then subvalue, then ASCII path bytes.
  `descending` must be 0 (ascending) or 1 (descending). Returns 0 on success,
  1 when a required non-empty buffer pointer is null, 2 for an invalid order,
  and 3 for a bad path range. An empty batch succeeds without dereferencing any

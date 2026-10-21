@@ -18,6 +18,7 @@ fn panic_handler(_: &core::panic::PanicInfo<'_>) -> ! {
 #[repr(C)]
 pub struct SortRow {
     pub value: i64,
+    pub subvalue: i64,
     pub path_offset: u32,
     pub path_length: u32,
 }
@@ -32,9 +33,14 @@ fn compare_indices(
     let left = &rows[left_index as usize];
     let right = &rows[right_index as usize];
     let value_order = if descending == 1 {
-        right.value.cmp(&left.value)
+        right
+            .value
+            .cmp(&left.value)
+            .then_with(|| right.subvalue.cmp(&left.subvalue))
     } else {
-        left.value.cmp(&right.value)
+        left.value
+            .cmp(&right.value)
+            .then_with(|| left.subvalue.cmp(&right.subvalue))
     };
     let left_path =
         &paths[left.path_offset as usize..left.path_offset as usize + left.path_length as usize];
@@ -223,11 +229,13 @@ mod tests {
         let mut rows = [
             SortRow {
                 value: 2,
+                subvalue: 0,
                 path_offset: 0,
                 path_length: 0,
             },
             SortRow {
                 value: 1,
+                subvalue: 0,
                 path_offset: 0,
                 path_length: 0,
             },
@@ -268,16 +276,19 @@ mod tests {
         let rows = [
             SortRow {
                 value: 10,
+                subvalue: 0,
                 path_offset: 0,
                 path_length: 5,
             },
             SortRow {
                 value: 30,
+                subvalue: 0,
                 path_offset: 10,
                 path_length: 5,
             },
             SortRow {
                 value: 10,
+                subvalue: 0,
                 path_offset: 5,
                 path_length: 5,
             },
@@ -295,16 +306,19 @@ mod tests {
         let rows = [
             SortRow {
                 value: 200,
+                subvalue: 0,
                 path_offset: 0,
                 path_length: 7,
             },
             SortRow {
                 value: 100,
+                subvalue: 100,
                 path_offset: 7,
                 path_length: 7,
             },
             SortRow {
                 value: 100,
+                subvalue: 200,
                 path_offset: 14,
                 path_length: 7,
             },
@@ -313,7 +327,7 @@ mod tests {
         let (status, output) = sort(&rows, paths, 0);
 
         assert_eq!(status, 0);
-        assert_eq!(output, [2, 1, 0]);
+        assert_eq!(output, [1, 2, 0]);
     }
 
     #[test]
@@ -321,6 +335,7 @@ mod tests {
         let paths = b"short";
         let rows = [SortRow {
             value: 1,
+            subvalue: 0,
             path_offset: 3,
             path_length: 4,
         }];
@@ -334,6 +349,7 @@ mod tests {
     fn accepts_null_path_buffer_when_all_paths_are_empty() {
         let rows = [SortRow {
             value: 1,
+            subvalue: 0,
             path_offset: 0,
             path_length: 0,
         }];
