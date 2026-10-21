@@ -95,10 +95,16 @@ RUBY
 }
 brew install --cask "$cask_name"
 brew info --cask "$cask_name"
-brew list --cask --versions "$cask_name"
-[[ -d "$app_path/Contents/MacOS" && -f "$app_path/Contents/Info.plist" ]]
+brew list --cask --full-name | grep -Fx "$cask_name"
+[[ -d "$app_path/Contents/MacOS" && -f "$app_path/Contents/Info.plist" ]] || {
+  echo "Homebrew installed the cask but the expected app bundle is incomplete." >&2
+  exit 1
+}
 installed_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_path/Contents/Info.plist")"
-[[ "$installed_version" == "$version" ]]
+[[ "$installed_version" == "$version" ]] || {
+  echo "Expected app version $version; installed bundle reports $installed_version." >&2
+  exit 1
+}
 file "$app_path/Contents/MacOS/Sweepdeck"
 find "$app_path" -maxdepth 4 -print
 
