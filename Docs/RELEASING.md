@@ -28,8 +28,10 @@ not publish an npm package.
 The release workflow builds `Sweepdeck-<version>-macOS.zip` and a neighboring
 `.sha256` file from the version proposed by semantic-release. It verifies the checksum,
 retains both files in the seven-day candidate artifact, then reuses those exact files
-after the protected publish job creates the tag and GitHub Release. The app ZIP is a
-minimal app bundle; it does not contain a separate installer or support files.
+after the protected publish job creates the tag and GitHub Release. Asset attachment
+uploads only missing files and verifies each remote SHA-256, so a retry can finish a
+partial upload without replacing a mismatched asset. The app ZIP is a minimal app bundle;
+it does not contain a separate installer or support files.
 
 Before publication, a separate Homebrew candidate job downloads those exact files and
 runs the cask through Homebrew audit and style, installs and uninstalls it on a

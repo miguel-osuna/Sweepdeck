@@ -171,4 +171,17 @@ jobs:
           archive="dist/Sweepdeck-${RELEASE_VERSION}-macOS.zip"
           checksum="$archive.sha256"
           (cd dist && shasum -a 256 --check "$(basename "$checksum")")
-          gh release upload "v${RELEASE_VERSION}" "$archive" "$checksum" --repo "$GITHUB_REPOSITORY"
+          release_endpoint="repos/${GITHUB_REPOSITORY}/releases/tags/v${RELEASE_VERSION}"
+          for asset in "$archive" "$checksum"; do
+            asset_name="$(basename "$asset")"
+            expected_digest="sha256:$(shasum -a 256 "$asset" | awk '{print $1}')"
+            remote_digest="$(gh api "$release_endpoint" --jq ".assets[]? | select(.name == \"${asset_name}\") | .digest // empty")"
+            if [[ -z "$remote_digest" ]]; then
+              gh release upload "v${RELEASE_VERSION}" "$asset" --repo "$GITHUB_REPOSITORY"
+              remote_digest="$(gh api "$release_endpoint" --jq ".assets[]? | select(.name == \"${asset_name}\") | .digest // empty")"
+            fi
+            [[ "$remote_digest" == "$expected_digest" ]] || {
+              echo "Release asset $asset_name is missing or does not match the verified candidate." >&2
+              exit 1
+            }
+          done
