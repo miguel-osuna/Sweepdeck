@@ -7,10 +7,10 @@ and built and verified the release bundle. GitHub Actions run
 [#94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559) passed
 all three platform lanes: Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`,
 and Swift 6.4 on macOS 27.0.1 with Xcode 27.0 preview. Each lane passed all 43
-tests, the 80% coverage floor and the release build. The macOS 15 first attempt on earlier run #92 reported signal 11 after all 43
-tests passed; its targeted rerun succeeded, and later run #94 passed all jobs.
-Continue monitoring this test-host flake. Interactive UI behavior was not checked
-on any CI runner.
+tests, the 80% coverage floor and the release build. The first macOS 15 attempt
+on earlier run #92 reported signal 11 after all 43 tests passed; its targeted
+rerun succeeded, and the later run #94 passed all jobs. Continue monitoring this
+test-host flake. Interactive UI behavior was not checked on any CI runner.
 
 ## Automated checks
 
@@ -26,8 +26,9 @@ on any CI runner.
   cancellation and batched/final counts. Six CandidateMatcher tests cover
   case-insensitive path/category filtering, all sort modes and tie ordering, and
   verify that progress callbacks run off the main thread and reach the final
-  candidate count. Appearance tests cover System/Light/Dark mapping and stored
-  value compatibility. Disk Explorer tests cover root/folder aggregation, nested files,
+  candidate count. Appearance tests cover stored-value compatibility, System/Light/Dark
+  transitions, and pixel equality between Dark → System Light and forced Light.
+  Disk Explorer tests cover root/folder aggregation, nested files,
   extension/size/age filters, authorized-root boundaries, and batched progress off
   the main thread over 3,000 entries. Four `ResultPageTests` cover empty and
   partial pages, invalid indexes and dimensions, safe very-large ranges, and
@@ -43,10 +44,11 @@ on any CI runner.
 - GitHub Actions run [#94](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39523586559)
   passed all 43 tests, the 80% `SweepdeckCore` line-coverage floor and release
   build with Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`, and Swift 6.4 on
-  macOS 27.0.1 with Xcode 27.0 preview. On earlier run #92, the first `macos-15` test-host process exited with signal
-  11 after reporting all tests passed; a targeted rerun passed tests, coverage,
-  and build. Run #94 passed all jobs. Keep monitoring the earlier test-host flake.
-  These checks do not verify interactive UI behavior.
+  macOS 27.0.1 with Xcode 27.0 preview. On earlier run #92, the first `macos-15`
+  test-host process exited with signal 11 after reporting all tests passed; a
+  targeted rerun passed tests, coverage, and build. Run #94 passed all jobs. Keep
+  monitoring the earlier test-host flake. These checks do not verify interactive
+  UI behavior.
 - Standalone CLI smokes used generated fixtures only, but could not verify Trash
   without the app's folder-picker flow: direct `FileManager.trashItem` returned
   Cocoa error 513 / OSStatus -5000 (`afpAccessDenied`), and `MacTrashService`
@@ -115,24 +117,27 @@ under `/private/tmp/SweepdeckUIFixture`.
   not prove whether Settings itself works or fails. Its code was reviewed, and
   its preference persistence and bounds are covered by unit tests; visual checks
   of Settings controls and flows remain outstanding.
-- A user-supplied System Light screenshot with no app modal showed the Settings
-  detail pane dark while its sidebar remained light. The user identified the
-  trigger as switching the in-app setting from Dark to System. The root SwiftUI
-  view now applies explicit Light and Dark choices to its `NSWindow`; System
-  clears that window override and inherits the app's effective appearance. A
-  hosted `NavigationSplitView` regression checks the sidebar and detail pane
-  together through Dark → System Light, verifies the AppKit window's effective
-  appearance, follows later system appearance changes, and checks forced Light.
-  All 43 tests pass, SweepdeckCore coverage is 85.4%, and the release bundle builds.
-  The UI bridge returned `Sky Computer Use native pipe closed before response`
-  when selecting the running app, so no screenshot comparison is available.
+- A user-supplied recording shows the reported mix at about 12 seconds: System is
+  selected, the sidebar is light, and the detail pane is dark. The next sampled
+  frame selects Light; it does not establish whether the mix persisted after the
+  user changed modes. The root SwiftUI view applies explicit Light/Dark choices
+  to its `NSWindow`; System clears that window override. The hosted split-view
+  regression checks both SwiftUI schemes and AppKit effective appearance through
+  Dark → System Light, system appearance changes, and forced Light. It also
+  compares rendered 1,200 × 800 bitmap output: Dark must differ from Light, and
+  System Light reached after Dark must match forced Light pixel-for-pixel. The
+  full local 43-test run passes. This is an in-memory rendering comparison, not a
+  checked-in golden screenshot or a capture of the full production app. The
+  computer-use bridge returned `Sky Computer Use native pipe closed before
+  response` when selecting the running app, so a fresh production-app comparison
+  remains outstanding.
 
 The broader end-to-end UI checks were manual, fixture-based checks rather than
-XCUITest flows. The appearance transition has a hosted-window Swift Testing
-regression, but there is no screenshot baseline. The read-only Downloads scan is
-the only personal-folder scan recorded here; it did not select or move any of its
-files. One generated fixture was moved to Trash for the end-to-end test, and
-Trash was not emptied.
+XCUITest flows. The appearance transition has a hosted-window rendered-image
+differential regression, but no checked-in production screenshot baseline. The
+read-only Downloads scan is the only personal-folder scan recorded here; it did
+not select or move any of its files. One generated fixture was moved to Trash for
+the end-to-end test, and Trash was not emptied.
 
 ## Adversarial review
 
