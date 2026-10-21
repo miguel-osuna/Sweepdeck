@@ -19,6 +19,10 @@ also passed the macOS 15, macOS 26, and macOS 27 preview build lanes in
 [Build and test run 39662470145](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39662470145),
 and the disposable Homebrew candidate smoke in
 [run 39662470012](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39662470012).
+The icon-bearing 0.2.0 release then passed the release verification matrix, candidate
+build, and disposable Homebrew smoke in [release run 39664467890](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890).
+The protected release job was approved by its required reviewer and completed
+successfully.
 
 ## Homebrew and Gatekeeper evidence
 
@@ -39,17 +43,36 @@ with its isolated temporary state directory. The runner did not approve the app 
 verify a successful post-approval launch. It did not remove quarantine or disable
 Gatekeeper.
 
-The cask is not yet public. Tap PR [#1](https://github.com/miguel-osuna/homebrew-tap/pull/1)
-currently provides the validation workflow and neutral tap description. The cask will
-be added after an icon-bearing release is available, then the tap workflow will test the
-actual public release URL. The intended install command is
+The published [0.2.0 GitHub Release](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.2.0)
+includes its archive and `.sha256` sidecar. The downloaded public archive matches both
+the sidecar and GitHub's recorded asset digest:
+`e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`. The archive
+contains only `Sweepdeck.app`, including `Contents/Resources/Sweepdeck.icns`. Its
+disposable macOS 26 Apple Silicon Homebrew candidate check passed audit, style, install,
+bundle/version and quarantine inspection, first-launch reporting, and uninstall. The
+captured first-launch screen again showed **“Sweepdeck” Not Opened**; the candidate
+check did not approve the app or verify a successful post-approval launch.
+Tap PR [#2](https://github.com/miguel-osuna/homebrew-tap/pull/2) passed the tap's
+disposable Apple Silicon macOS workflow ([run 39676510862](https://github.com/miguel-osuna/homebrew-tap/actions/runs/39676510862)):
+strict audit, style, install, installed app/version and quarantine inspection,
+Gatekeeper/first-launch reporting, and uninstall all passed.
+The quarantine attribute remained on the installed app, its ad-hoc signature verified,
+and Gatekeeper rejected unattended launch with status 3. The captured dialog again said
+**“Sweepdeck” Not Opened** because Apple could not verify the app was free of malware.
+Launch Services timed out after 15 seconds (status 124), but the Sweepdeck process was
+observed with the runner's isolated temporary state directory. The check did not approve
+the app or remove quarantine; uninstall then removed the app from `/Applications`.
+
+Tap PR [#1](https://github.com/miguel-osuna/homebrew-tap/pull/1) added the validation
+workflow and a product-neutral repository description. Tap PR [#2](https://github.com/miguel-osuna/homebrew-tap/pull/2)
+published the cask on the tap's default branch. The install command is
 `brew install --cask miguel-osuna/tap/sweepdeck`. Homebrew trusts only that fully
 qualified cask for the command. Short-name install requires `brew tap miguel-osuna/tap`,
 `brew trust --cask miguel-osuna/tap/sweepdeck`, then `brew install --cask sweepdeck`.
 
-This owner-managed tap keeps the Gatekeeper warning visible. The cask will install only
-the app, with no `zap` stanza or cleanup scripts; uninstall preserves app preferences
-and history. The current build does not pass Gatekeeper and does not meet the official
+This owner-managed tap keeps the Gatekeeper warning visible. The cask installs only the
+app, with no `zap` stanza or cleanup scripts; uninstall preserves app preferences and
+history. The current build does not pass Gatekeeper and does not meet the official
 Homebrew cask executable requirement, so official-cask inclusion is not being pursued.
 App Store submission and notarization are not requirements of the cask format.
 
@@ -68,8 +91,8 @@ App Store membership or paid signing account is needed to build.
 The app bundle build was attempted after adding the icon resource but stopped before
 compilation because Rust 1.99.1, selected by `rust-toolchain.toml`, is not installed in
 this workspace. No Rust toolchain, Xcode/Command Line Tools, macOS settings, or signing
-identity was changed. The 0.1.0 source build has passed in CI; icon packaging awaits the
-pull request's CI result. Local Homebrew and taps were not modified.
+identity was changed. The 0.1.0 source build passed in CI, and the icon-bearing build
+passed in PR #12 and the 0.2.0 release run. Local Homebrew and taps were not modified.
 
 ## Verification details
 

@@ -31,19 +31,27 @@ passed. It publishes the app-only archive
 and its `.sha256` sidecar. The verified archive SHA-256 is
 `383034386df5a692a687df6ff1b70ea088791df304dd8de568069da2fd097789`.
 
-The 0.1.0 archive was built before the app icon was added. The cask is intentionally
-waiting for the next icon-bearing app release so that the first Homebrew install
-includes the selected icon artwork.
+The 0.1.0 archive was built before the app icon was added. The icon-bearing 0.2.0
+release was published from `main` after the required environment approval. The complete
+[release run 39664467890](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890)
+passed. Its app-only archive includes `Sweepdeck.icns`; the public archive and sidecar
+were independently downloaded and verified against the same SHA-256:
+`e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`.
+The first-launch screen showed the Gatekeeper malware-verification warning; the check
+did not approve the app or verify a successful post-approval launch.
 
 ## Homebrew distribution
 
-The maintained public tap is [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap),
-with the cask at `Casks/sweepdeck.rb`. Its open [PR #1](https://github.com/miguel-osuna/homebrew-tap/pull/1)
-adds a validation workflow and a product-neutral repository description; it does not
-yet contain an installable cask. The tap PR will add the cask only after the matching
-versioned GitHub Release asset is public.
+The maintained public tap is [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap).
+Tap PR [#1](https://github.com/miguel-osuna/homebrew-tap/pull/1) added its validation
+workflow and a product-neutral repository description. Tap PR
+[#2](https://github.com/miguel-osuna/homebrew-tap/pull/2) merged `Casks/sweepdeck.rb`
+against the public 0.2.0 assets after its disposable macOS validation passed in
+[tap run 39676510862](https://github.com/miguel-osuna/homebrew-tap/actions/runs/39676510862).
+That run passed strict audit, style, install, quarantine and bundle inspection,
+Gatekeeper/first-launch reporting, and uninstall.
 
-The primary install command, once the cask is merged, is:
+The primary install command is:
 
 ```sh
 brew install --cask miguel-osuna/tap/sweepdeck
@@ -59,8 +67,8 @@ brew install --cask sweepdeck
 ```
 
 The short command does not work from a fresh Homebrew setup without those steps or
-inclusion in an official tap. The cask will install only `Sweepdeck.app`, contain no
-`zap` stanza or cleanup scripts, and preserve Sweepdeck preferences and history on
+inclusion in an official tap. The published cask installs only `Sweepdeck.app`, contains
+no `zap` stanza or cleanup scripts, and preserves Sweepdeck preferences and history on
 uninstall.
 
 Cask updates are manual and reviewed. After each app release, verify the published
@@ -85,7 +93,7 @@ personal folders.
 Users who choose to proceed can select **Done**, then check **System Settings >
 Privacy & Security** for **Open Anyway** after attempting to open the app. Read Apple's
 [security guidance](https://support.apple.com/en-au/102445) and continue only if the
-app and its source are trusted. The cask will describe this approval step; it will not
+app and its source are trusted. The cask describes this approval step; it does not
 automate it. App Store submission and notarization are not cask-format requirements;
 they remain Gatekeeper compatibility decisions.
 
