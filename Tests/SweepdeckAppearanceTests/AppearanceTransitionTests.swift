@@ -64,17 +64,18 @@ private struct SchemeProbe: View {
     let sidebarScheme = EffectiveScheme()
     let detailScheme = EffectiveScheme()
     let window = NSWindow(
-        contentRect: NSRect(x: 0, y: 0, width: 320, height: 120),
+        contentRect: NSRect(x: 0, y: 0, width: 1_200, height: 800),
         styleMask: .borderless,
         backing: .buffered,
         defer: false
     )
     // Keep the hosted window offscreen so this scheme regression remains headless in CI.
-    window.contentView = NSHostingView(rootView: AppearanceHarness(
+    let hostingView = NSHostingView(rootView: AppearanceHarness(
         selection: selection,
         sidebarScheme: sidebarScheme,
         detailScheme: detailScheme
     ))
+    window.contentView = hostingView
     defer {
         window.close()
         application.appearance = originalApplicationAppearance
@@ -86,6 +87,8 @@ private struct SchemeProbe: View {
     #expect(darkDetailWasRendered)
     #expect(window.appearance?.name == .darkAqua)
     #expect(window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
+    let darkImage = captureRenderedImage(of: hostingView)
+    #expect(darkImage != nil)
 
     selection.mode = .system
     let systemLightSidebarWasRendered = await waitForScheme(.light, in: sidebarScheme)
@@ -94,6 +97,8 @@ private struct SchemeProbe: View {
     #expect(systemLightDetailWasRendered)
     #expect(window.appearance == nil)
     #expect(window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua)
+    let systemLightImage = captureRenderedImage(of: hostingView)
+    #expect(systemLightImage != nil)
 
     application.appearance = NSAppearance(named: .darkAqua)
     let systemSidebarFollowedDarkAppearance = await waitForScheme(.dark, in: sidebarScheme)
@@ -108,6 +113,8 @@ private struct SchemeProbe: View {
     #expect(forcedLightDetailWasRendered)
     #expect(window.appearance?.name == .aqua)
     #expect(window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua)
+    let forcedLightImage = captureRenderedImage(of: hostingView)
+    #expect(forcedLightImage != nil)
 
     selection.mode = .system
     let systemDarkSidebarWasRendered = await waitForScheme(.dark, in: sidebarScheme)
@@ -122,6 +129,42 @@ private struct SchemeProbe: View {
     let systemDetailFollowedLightAppearance = await waitForScheme(.light, in: detailScheme)
     #expect(systemSidebarFollowedLightAppearance)
     #expect(systemDetailFollowedLightAppearance)
+    if let darkImage, let systemLightImage, let forcedLightImage {
+        #expect(darkImage.pixelsWide > 0)
+        #expect(darkImage.pixelsHigh > 0)
+        #expect(renderedDifferenceCount(darkImage, forcedLightImage) > 0)
+        #expect(renderedDifferenceCount(systemLightImage, forcedLightImage) == 0)
+    }
+}
+
+@MainActor
+private func captureRenderedImage(of view: NSView) -> NSBitmapImageRep? {
+    view.layoutSubtreeIfNeeded()
+    guard let image = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return nil }
+    view.cacheDisplay(in: view.bounds, to: image)
+    return image
+}
+
+@MainActor
+private func renderedDifferenceCount(_ left: NSBitmapImageRep, _ right: NSBitmapImageRep) -> Int {
+    guard left.pixelsWide == right.pixelsWide, left.pixelsHigh == right.pixelsHigh else { return .max }
+    var differences = 0
+    for y in 0..<left.pixelsHigh {
+        for x in 0..<left.pixelsWide {
+            guard let leftPixel = left.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+                  let rightPixel = right.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else {
+                differences += 1
+                continue
+            }
+            if abs(leftPixel.redComponent - rightPixel.redComponent) > 0.001
+                || abs(leftPixel.greenComponent - rightPixel.greenComponent) > 0.001
+                || abs(leftPixel.blueComponent - rightPixel.blueComponent) > 0.001
+                || abs(leftPixel.alphaComponent - rightPixel.alphaComponent) > 0.001 {
+                differences += 1
+            }
+        }
+    }
+    return differences
 }
 
 @MainActor
