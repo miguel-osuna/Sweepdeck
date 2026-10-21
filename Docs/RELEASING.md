@@ -81,6 +81,15 @@ The publish configuration is also incomplete as of 2026-10-21: the repository ha
 the maintainer must set `RELEASE_READY=true` and configure a required reviewer on the
 `release` environment. The release workflow fails closed without these controls.
 
+A seventh candidate check, [Actions run 39628624784](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624784),
+was triggered by a documentation-only commit. It built and verified the candidate
+archive and sidecar checksum
+(`61b875794a755b7a5d4f0481464bf01f63e92741f13aece70a1b987b0fc47e3a`). Homebrew
+audit/style, install, bundle inspection, and uninstall passed. Quarantine remained
+present, `spctl` rejected the app (status 3), Launch Services timed out after 15 seconds,
+and no app process appeared. This checksum is from the candidate run, not a public
+release asset.
+
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
 `Casks/sweepdeck.rb`. The primary command is
@@ -101,7 +110,7 @@ PR is merged. No cross-repository Actions token is required for this manual proc
 
 Neither App Store submission nor notarization is required by the cask format. They
 remain Gatekeeper compatibility decisions. The current app build is ad-hoc signed,
-and at least six quarantined candidates were rejected by Gatekeeper on a disposable Apple
+and at least seven quarantined candidates were rejected by Gatekeeper on a disposable Apple
 Silicon runner. Do not mark the release ready or publish the cask unless a future
 supported build passes the same checks. Never remove quarantine or bypass macOS
 security controls.

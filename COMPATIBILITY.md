@@ -2,9 +2,9 @@
 
 | Version | Build target | Verification |
 |---|---|---|
-| macOS 15 | Minimum deployment target | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.2 on the `macos-15` runner ([rebased PR run 39624090617](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090617)); interactive UI runtime not checked |
-| macOS 26 | Latest stable Swift toolchain lane | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.4.1 on the `macos-26` runner ([rebased PR run 39624090617](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090617)); interactive UI runtime not checked |
-| macOS 27 preview | Preview compatibility lane | 48 tests, 87.5% core executable-line coverage and release build passed on the Xcode 27 preview runner ([rebased PR run 39624090617](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090617)). An earlier run on the prior revision exited with signal 11 in `swiftpm-testing-helper` during `SweepdeckAppearanceTests` ([run 39570272638](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570272638)); the rebased revision passes. Interactive UI runtime not checked |
+| macOS 15 | Minimum deployment target | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.2 on the `macos-15` runner ([PR run 39628624761](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624761)); interactive UI runtime not checked |
+| macOS 26 | Latest stable Swift toolchain lane | 48 tests, 87.5% core executable-line coverage and release build passed with Swift 6.4.1 on the `macos-26` runner ([PR run 39628624761](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624761)); interactive UI runtime not checked |
+| macOS 27 preview | Preview compatibility lane | 48 tests, 87.5% core executable-line coverage and release build passed on the Xcode 27 preview runner ([PR run 39628624761](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624761)). An earlier run on the prior revision exited with signal 11 in `swiftpm-testing-helper` during `SweepdeckAppearanceTests` ([run 39570272638](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570272638)); the rebased revision passes. Interactive UI runtime not checked |
 | macOS 26.6.2, arm64 | Local host | 43 tests, 85.4% core executable-line coverage and release bundle build passed; see `Docs/VALIDATION.md` for fixture checks and outstanding pixel-level visual verification |
 | Intel / other versions | Not a product target | Not tested |
 
@@ -61,6 +61,12 @@ audit/style, install, bundle inspection, and uninstall passed with quarantine in
 Gatekeeper rejected the app (status 3), Launch Services timed out after 15 seconds,
 and no app process appeared. This is a candidate artifact checksum, not the checksum
 of a published release asset.
+A seventh check after a documentation-only update, in [candidate run 39628624784](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624784),
+again built and verified the archive and sidecar checksum
+(`61b875794a755b7a5d4f0481464bf01f63e92741f13aece70a1b987b0fc47e3a`). Homebrew
+audit/style, install, bundle inspection, and uninstall passed; quarantine remained
+intact, Gatekeeper rejected the app (status 3), Launch Services timed out after
+15 seconds, and no app process appeared. The checksum is for this candidate only.
 
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable
@@ -113,3 +119,12 @@ the push run's Xcode 27 test helper exited with signal 11 during
 `SweepdeckAppearanceTests`. The preview result is inconsistent. These CI runs do
 not verify interactive launch, permissions prompts or visual UI behavior on any
 runner.
+
+On commit `916b829`, the pull-request build run [39628624761](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624761)
+passed all three macOS lanes and release-tooling checks: 48 tests and 87.5% core
+executable-line coverage per macOS lane. The duplicate push run
+[39628613820](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628613820)
+passed the stable and preview lanes and release tooling, but the macOS 15 test command
+exited with signal 11 after its appearance test passed; no recent XCTest or SwiftPM
+helper crash report was found. This was not reproduced by the pull-request run on the
+same commit.
