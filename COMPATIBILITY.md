@@ -38,6 +38,9 @@ the app with Homebrew uninstall. This was a release-shaped candidate ZIP from a
 temporary local file URL, not a public GitHub Release asset; the recorded checksum is
 not the hash for a published release. The versioned GitHub Release asset and public
 cask remain unpublished pending a Developer ID signing and notarization decision.
+A repeat in [candidate run 39570883868](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570883868)
+passed the same Homebrew checks and reproduced the quarantine rejection and failed
+first-launch result after the smoke command was bounded.
 
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable

@@ -49,9 +49,10 @@ Sweepdeck preferences and history in place; the cask has no `zap` stanza. App St
 submission and notarization are not cask-format requirements. In the disposable
 macOS 26 Apple Silicon check, Homebrew audit, style, install, bundle inspection, and
 uninstall passed, but `spctl` rejected the quarantined app and Launch Services did
-not return within 15 seconds; no app process appeared. The cask and public release
-remain unpublished while the Developer ID signing and notarization decision is
-pending. See [compatibility evidence](COMPATIBILITY.md).
+not return within 15 seconds; no app process appeared. A second candidate run
+reproduced the same result. The cask and public release remain unpublished while the
+Developer ID signing and notarization decision is pending. See
+[compatibility evidence](COMPATIBILITY.md).
 
 On a healthy Xcode installation, `swift test` and `swift build -c release` also work.
 The wrapper keeps caches inside `.build` and handles two detected remnants of

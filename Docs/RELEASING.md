@@ -53,6 +53,11 @@ This run used the candidate ZIP through a temporary local tap; it did not publis
 GitHub Release asset or a public cask. The cask and release remain blocked pending a
 decision on Developer ID signing and notarization.
 
+A repeat in [Actions run 39570883868](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570883868)
+reproduced the same result after adding bounded launch diagnostics: Homebrew
+audit/style/install/uninstall passed, quarantine remained present, `spctl` rejected
+the app with exit status 3, Launch Services timed out, and no app process appeared.
+
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
 `Casks/sweepdeck.rb`. The primary command is
