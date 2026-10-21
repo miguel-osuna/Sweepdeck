@@ -122,10 +122,12 @@ under `/private/tmp/SweepdeckUIFixture`.
   The UI bridge returned `Sky Computer Use native pipe closed before response`
   when selecting the running app, so no screenshot comparison is available.
 
-The UI checks were manual, fixture-based checks rather than XCTest UI tests. The
-read-only Downloads scan is the only personal-folder scan recorded here; it did
-not select or move any of its files. One generated fixture was moved to Trash for
-the end-to-end test, and Trash was not emptied.
+The broader end-to-end UI checks were manual, fixture-based checks rather than
+XCUITest flows. The appearance transition has a hosted-window Swift Testing
+regression, but there is no screenshot baseline. The read-only Downloads scan is
+the only personal-folder scan recorded here; it did not select or move any of its
+files. One generated fixture was moved to Trash for the end-to-end test, and
+Trash was not emptied.
 
 ## Adversarial review
 
