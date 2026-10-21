@@ -16,6 +16,15 @@ job uses the protected environment and pauses for reviewer approval before creat
 the tag and GitHub Release. If there is no release-worthy commit, it exits without
 publishing.
 
+Starting with the next published version, the workflow also packages a direct-download
+DMG from the tested ZIP and writes a separate SHA-256 sidecar. The disposable Apple
+Silicon candidate job verifies both checksums, mounts the DMG read-only, and checks the
+app version, signature, icon, Applications shortcut, and `INSTALL.txt`. It does not
+simulate a downloaded DMG's quarantine state or verify a post-approval launch; the
+Homebrew ZIP check remains the first-launch Gatekeeper evidence. The publish job
+attaches the ZIP, ZIP checksum, DMG, and DMG checksum only after candidate checks pass
+and the required release reviewer approves.
+
 The first publish creates and validates the `v0.0.0` analysis baseline at the
 repository's root commit, then requires semantic-release to propose exactly `0.1.0`.
 Later versions follow Conventional Commit rules. Release tooling is not published as
@@ -39,6 +48,12 @@ were independently downloaded and verified against the same SHA-256:
 `e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`.
 The first-launch screen showed the Gatekeeper malware-verification warning; the check
 did not approve the app or verify a successful post-approval launch.
+
+The 0.2.0 release contains only the app ZIP and its checksum. The DMG is an optional
+direct-download format; the cask continues to use the app-only ZIP. The DMG will
+contain the same app, an Applications shortcut, and `INSTALL.txt` with manual install
+and Gatekeeper instructions. It improves drag-to-Applications setup but does not add
+signing or notarization or remove the first-launch approval.
 
 ## Homebrew distribution
 
@@ -90,11 +105,26 @@ did not approve the app or verify a successful launch after approval. The releas
 workflow leaves quarantine intact, does not disable Gatekeeper, and does not scan
 personal folders.
 
-Users who choose to proceed can select **Done**, then check **System Settings >
-Privacy & Security** for **Open Anyway** after attempting to open the app. Read Apple's
-[security guidance](https://support.apple.com/en-au/102445) and continue only if the
-app and its source are trusted. The cask describes this approval step; it does not
-automate it. App Store submission and notarization are not cask-format requirements;
+Users who choose to proceed can select **Done**, open **System Settings > Privacy &
+Security**, scroll to **Security**, and click **Open Anyway** for Sweepdeck. After the
+warning appears again, they can click **Open** if they still trust the app and its
+source. Apple says this saves an exception for the app so future launches work
+normally. See Apple's [security guidance](https://support.apple.com/en-au/102445).
+The cask describes this approval step; it does not automate it. This is a local,
+per-app exception, not a global Gatekeeper setting.
+
+Changing the archive from ZIP to DMG can offer a familiar drag-to-Applications step,
+but it does not establish the developer's identity or provide a notarization ticket.
+It therefore does not resolve this Gatekeeper warning. To avoid this
+malware-verification block and the **Open Anyway** exception workflow, the release
+must be signed with an Apple Developer ID and notarized. macOS may still ask users to
+confirm opening a downloaded app the first time. Apple requires an Apple Developer
+Program Account Holder to create a Developer ID certificate. The program currently
+costs USD 99 per year in the United States (regional pricing and limited organization
+fee waivers may differ; see Apple's [membership
+terms](https://developer.apple.com/help/account/membership/program-enrollment)). The
+current no-cost release path keeps quarantine enabled and documents the one-time user
+approval. App Store submission and notarization are not cask-format requirements;
 they remain Gatekeeper compatibility decisions.
 
 The official Homebrew cask was not pursued. Its [acceptance policy](https://docs.brew.sh/Acceptable-Casks)

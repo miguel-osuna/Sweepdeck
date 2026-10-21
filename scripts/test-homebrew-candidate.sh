@@ -127,11 +127,18 @@ cask "sweepdeck" do
   app "Sweepdeck.app"
 
   caveats <<~EOS
-    macOS may show a security warning the first time you open Sweepdeck. This build
-    has an ad-hoc signature, no Apple-issued Developer ID signature, and no
-    notarization ticket. If macOS blocks the app, you can choose whether to allow it
-    in System Settings > Privacy & Security > Open Anyway. Homebrew leaves quarantine
-    in place and the cask does not bypass Gatekeeper.
+    This ad-hoc signed build has no Apple-issued Developer ID signature or
+    notarization ticket, so macOS may block its first launch. Continue only if you
+    trust that you installed Sweepdeck from this tap or its official GitHub release.
+
+    To approve Sweepdeck once:
+      1. Click Done in the warning. Move to Trash removes the app.
+      2. Open System Settings > Privacy & Security, scroll to Security, and click
+         Open Anyway for Sweepdeck.
+      3. When the warning appears again, click Open if you still want to run it.
+
+    macOS saves this as a per-app exception for future launches. Homebrew leaves
+    quarantine in place, and this cask does not bypass Gatekeeper.
   EOS
 end
 EOF

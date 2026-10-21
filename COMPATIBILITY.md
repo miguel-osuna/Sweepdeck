@@ -82,6 +82,39 @@ policy normally requires 30 forks or watchers or 75 stars, increased to 90 forks
 watchers or 225 stars for a self-submission; repositories under 30 days old are normally
 ineligible. These criteria do not restrict an owner-managed tap.
 
+### User approval procedure
+
+For a user who trusts the downloaded release, Apple's documented one-time approval is:
+click **Done** in the warning, open **System Settings > Privacy & Security**, scroll to
+**Security**, click **Open Anyway** for Sweepdeck, then click **Open** in the repeated
+warning. Apple says this saves a per-app exception for future launches. This procedure
+is Apple guidance, not a successful post-approval launch observed by the candidate
+check; see [Apple's security guidance](https://support.apple.com/en-au/102445).
+
+The current app-only ZIP is ad-hoc signed without an Apple-issued Developer ID
+signature or notarization ticket. Packaging the same app in a DMG would not change its
+Gatekeeper status. A release that avoids this malware-verification block for users
+requires Developer ID signing and notarization, followed by a fresh quarantine and
+first-launch check on a disposable supported Mac. Apple currently lists the Developer
+Program at USD 99 per year in the United States, with regional pricing and limited
+organization fee waivers (see [membership
+terms](https://developer.apple.com/help/account/membership/program-enrollment)).
+macOS may still ask users to confirm opening a downloaded app the first time.
+
+The 0.2.0 release has only a ZIP. PR [#14](https://github.com/miguel-osuna/Sweepdeck/pull/14)
+adds an optional DMG to future releases. Its disposable macOS 26 Apple Silicon
+candidate smoke passed in [run 39684825389](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39684825389):
+the test built a version-0.1.0-format candidate from the PR, verified the DMG checksum
+and image, mounted it read-only, and checked the app version, code signature, icon,
+Applications shortcut, and install guide. It did not download the DMG or test its
+quarantine/first-launch behavior.
+
+The same run passed Homebrew audit, style, install, quarantine inspection, and
+uninstall against the candidate ZIP. Gatekeeper rejected the ad-hoc signed app with
+status 3; Launch Services timed out after 15 seconds and no app process was observed.
+The check did not simulate user approval or remove quarantine. It validates the
+packaging workflow, not successful post-approval app launch.
+
 ## Local workspace
 
 Observed host: macOS 26.6.2, arm64, Swift 6.2, SDK 26.0, Command Line Tools selected.
