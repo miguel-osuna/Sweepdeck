@@ -101,12 +101,19 @@ organization fee waivers (see [membership
 terms](https://developer.apple.com/help/account/membership/program-enrollment)).
 macOS may still ask users to confirm opening a downloaded app the first time.
 
-The 0.2.0 release has only a ZIP. The release-workflow change under review adds an
-optional DMG to future releases. Its disposable candidate check will inspect the
-checksum, mount the image read-only, and verify the app bundle, version, icon,
-Applications shortcut, and install guide. It will not claim to simulate a browser
-download's quarantine state or a successful DMG first launch. The Homebrew ZIP check
-continues to report the observed Gatekeeper warning without approving the app.
+The 0.2.0 release has only a ZIP. PR [#14](https://github.com/miguel-osuna/Sweepdeck/pull/14)
+adds an optional DMG to future releases. Its disposable macOS 26 Apple Silicon
+candidate smoke passed in [run 39684825389](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39684825389):
+the test built a version-0.1.0-format candidate from the PR, verified the DMG checksum
+and image, mounted it read-only, and checked the app version, code signature, icon,
+Applications shortcut, and install guide. It did not download the DMG or test its
+quarantine/first-launch behavior.
+
+The same run passed Homebrew audit, style, install, quarantine inspection, and
+uninstall against the candidate ZIP. Gatekeeper rejected the ad-hoc signed app with
+status 3; Launch Services timed out after 15 seconds and no app process was observed.
+The check did not simulate user approval or remove quarantine. It validates the
+packaging workflow, not successful post-approval app launch.
 
 ## Local workspace
 
