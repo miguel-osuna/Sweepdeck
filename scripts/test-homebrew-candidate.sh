@@ -33,6 +33,7 @@ temporary_state="$temporary_dir/state"
 app_path="/Applications/Sweepdeck.app"
 tap_name="miguel-osuna/tap"
 cask_name="$tap_name/sweepdeck"
+first_launch_screenshot="${RUNNER_TEMP:-/tmp}/Sweepdeck-first-launch.png"
 release_url='https://github.com/miguel-osuna/Sweepdeck/releases/download/v#{version}/Sweepdeck-#{version}-macOS.zip'
 open_pid=""
 
@@ -73,6 +74,14 @@ cask "sweepdeck" do
 
   depends_on arch: :arm64
   depends_on macos: :sequoia
+
+  caveats <<~EOS
+    macOS may show a security warning the first time you open Sweepdeck. This build
+    has an ad-hoc signature, no Apple-issued Developer ID signature, and no
+    notarization ticket. If macOS blocks the app, you can choose whether to allow it
+    in System Settings > Privacy & Security > Open Anyway. Homebrew leaves quarantine
+    in place and the cask does not bypass Gatekeeper.
+  EOS
 
   app "Sweepdeck.app"
 end
@@ -119,6 +128,14 @@ find "$app_path" -maxdepth 4 -print
 quarantine="$(xattr -p com.apple.quarantine "$app_path")"
 printf 'Homebrew quarantine: %s\n' "$quarantine"
 launchctl setenv SWEEPDECK_STATE_DIR "$temporary_state"
+codesign --verify --strict "$app_path"
+signature_info="$(codesign -dv --verbose=4 "$app_path" 2>&1 || true)"
+printf '%s\n' "$signature_info"
+grep -Fq 'Signature=adhoc' <<<"$signature_info" || {
+  echo "Expected the current no-cost build to use an ad-hoc signature." >&2
+  exit 1
+}
+rm -f "$first_launch_screenshot"
 
 set +e
 spctl --assess --type execute --verbose=4 "$app_path" >"$temporary_dir/gatekeeper.txt" 2>&1
@@ -126,8 +143,17 @@ gatekeeper_status=$?
 cat "$temporary_dir/gatekeeper.txt"
 open -a "$app_path" >"$temporary_dir/first-launch.txt" 2>&1 &
 open_pid=$!
+launch_started="$SECONDS"
 open_status=0
 for _ in {1..15}; do
+  if [[ ! -e "$first_launch_screenshot" && "$((SECONDS - launch_started))" -ge 3 ]]; then
+    if screencapture -x "$first_launch_screenshot" >/dev/null 2>&1; then
+      echo "Captured the disposable runner's first-launch screen: $first_launch_screenshot"
+    else
+      rm -f "$first_launch_screenshot"
+      echo "The disposable runner did not provide a capturable user session."
+    fi
+  fi
   if ! kill -0 "$open_pid" >/dev/null 2>&1; then
     wait "$open_pid"
     open_status=$?
@@ -155,20 +181,32 @@ cat "$temporary_dir/gatekeeper.txt"
 cat "$temporary_dir/first-launch.txt"
 printf 'Gatekeeper status: %s; Launch Services status: %s; app process: %s\n' \
   "$gatekeeper_status" "$open_status" "$launch_status"
-if [[ "$gatekeeper_status" -ne 0 || "$open_status" -ne 0 || "$launch_status" -ne 0 ]]; then
-  echo "The Homebrew-quarantined release candidate did not pass Gatekeeper and first-launch checks." >&2
+if [[ "$gatekeeper_status" -eq 0 ]]; then
+  [[ "$launch_status" -eq 0 ]] || {
+    echo "Gatekeeper accepted the app, but the app process did not start." >&2
+    exit 1
+  }
+  echo "Gatekeeper accepted the quarantined app and its process started."
+elif [[ "$gatekeeper_status" -eq 3 ]]; then
+  echo "Gatekeeper rejected the ad-hoc signed app for unattended launch."
+  echo "The app may require an explicit user decision in System Settings > Privacy & Security."
+  echo "This check did not simulate user approval or remove quarantine."
+else
+  echo "Unexpected Gatekeeper assessment status: $gatekeeper_status" >&2
   exit 1
 fi
 
-pkill -TERM -x Sweepdeck
-for _ in {1..10}; do
-  pgrep -x Sweepdeck >/dev/null 2>&1 || break
-  sleep 1
-done
-if pgrep -x Sweepdeck >/dev/null 2>&1; then
-  echo "Sweepdeck did not stop after the first-launch check." >&2
-  exit 1
+if [[ "$launch_status" -eq 0 ]]; then
+  pkill -TERM -x Sweepdeck
+  for _ in {1..10}; do
+    pgrep -x Sweepdeck >/dev/null 2>&1 || break
+    sleep 1
+  done
+  if pgrep -x Sweepdeck >/dev/null 2>&1; then
+    echo "Sweepdeck did not stop after the first-launch check." >&2
+    exit 1
+  fi
 fi
 brew uninstall --cask "$cask_name"
 [[ ! -e "$app_path" ]]
-echo "Homebrew candidate install, quarantine, first launch, and uninstall checks passed."
+echo "Homebrew candidate audit, style, install, quarantine, Gatekeeper report, and uninstall checks completed."

@@ -124,10 +124,18 @@ jobs:
         with:
           name: Sweepdeck-release-candidate-${{ needs.candidate.outputs.release_version }}
           path: dist
-      - name: Validate candidate through Homebrew on latest macOS Apple Silicon
+      - name: Validate Homebrew install and report first-launch approval behavior
         env:
           SWEEPDECK_VERSION: ${{ needs.candidate.outputs.release_version }}
         run: bash scripts/test-homebrew-candidate.sh "$SWEEPDECK_VERSION" "dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
+      - name: Preserve disposable first-launch screen for review
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Sweepdeck-first-launch-screen-${{ github.run_id }}
+          path: ${{ runner.temp }}/Sweepdeck-first-launch.png
+          if-no-files-found: ignore
+          retention-days: 1
 
   publish:
     needs: [candidate, homebrew_candidate]

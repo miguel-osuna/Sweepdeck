@@ -33,85 +33,42 @@ minimal app bundle; it does not contain a separate installer or support files.
 
 Before publication, a separate Homebrew candidate job downloads those exact files and
 runs the cask through Homebrew audit and style, installs and uninstalls it on a
-disposable `macos-26` Apple Silicon runner, checks the installed
-bundle and Homebrew quarantine, runs `spctl`, and attempts a first launch with
-`SWEEPDECK_STATE_DIR` pointed at temporary state. The test never removes quarantine,
-disables Gatekeeper, scans personal folders, or adds cask lifecycle scripts. A failed
-Gatekeeper or launch check fails the candidate job and prevents the protected publish
-job from running. The public tap's pull-request workflow will repeat audit, style,
-install, uninstall and first-launch checks against the actual versioned GitHub Release
-URL on `macos-26` before a cask update can merge.
+disposable `macos-26` Apple Silicon runner, checks the installed bundle and Homebrew
+quarantine, verifies the ad-hoc code signature, runs `spctl`, and attempts a first
+launch with `SWEEPDECK_STATE_DIR` pointed at temporary state. This release uses the
+no-cost, ad-hoc-signed build. Gatekeeper rejection is recorded as an expected
+user-approval requirement only when the bundle signature verifies as ad hoc. Other
+assessment failures, broken installs, checksum failures, or uninstall leftovers still
+fail the candidate. The job does not approve the app, remove quarantine, disable
+Gatekeeper, scan personal folders, or add cask lifecycle scripts. It captures the
+disposable runner screen when available so the first-launch UI can be inspected; the
+job does not claim that a user-approved launch passed unless that was actually tested.
+The public tap's pull-request workflow will repeat audit, style, install, quarantine,
+Gatekeeper reporting, and uninstall against the actual versioned GitHub Release URL on
+`macos-26` before a cask update can merge.
 
 For GUI launch isolation, the disposable runner temporarily sets
 `SWEEPDECK_STATE_DIR` in its launchd environment and unsets it from the script's exit
 trap; the local developer machine and its Homebrew state are not used by this check.
 
-The first disposable candidate check ran on 2026-10-21 in
-[Actions run 39569344355](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39569344355).
-Homebrew strict audit, style, install, installed-bundle inspection, and uninstall
-passed for the release-shaped 0.1.0 candidate. The check confirmed the ARM64 Mach-O
-executable, the expected app bundle and version, and a Homebrew quarantine attribute.
-`spctl --assess --type execute --verbose=4` rejected the app (exit status 3).
-Launch Services did not return within 15 seconds and no Sweepdeck process appeared.
-This run used the candidate ZIP through a temporary local tap; it did not publish a
-GitHub Release asset or a public cask. The candidate is not release-ready. Developer
-ID signing and notarization are not being added for this release attempt.
+The latest completed candidate check, [Actions run 39633942051](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39633942051),
+built the release-shaped 0.1.0 archive and verified its sidecar SHA-256
+(`52e7ddcb8433da194fc4cf93997d03a8d50ba220ea036b5e5460ebf26ead4a20`). Homebrew
+strict audit, style, install, bundle/version inspection, quarantine inspection, and
+uninstall passed. The ad-hoc code signature verified, while
+`spctl --assess --type execute --verbose=4` rejected the quarantined app with status 3.
+`open -a` did not return within 15 seconds (status 124), but the Sweepdeck process was
+observed. The runner did not capture the alert or inspect visible app UI, so this result
+does not establish what users see or confirm a successful interactive launch. It was a
+candidate archive through a temporary local tap, not a public release asset or cask.
+Earlier disposable runs reported the same Gatekeeper rejection and launch timeout; their
+notes incorrectly said no process appeared, but the recorded `pgrep` status was zero,
+which means a process was found. The CI evidence did not simulate a user's approval.
 
-A repeat in [Actions run 39570883868](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570883868)
-reproduced the same result after adding bounded launch diagnostics: Homebrew
-audit/style/install/uninstall passed, quarantine remained present, `spctl` rejected
-the app with exit status 3, Launch Services timed out, and no app process appeared.
-A third repeat in [Actions run 39571447748](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39571447748)
-also passed Homebrew audit, style, install, bundle inspection, and uninstall, then
-reproduced Gatekeeper rejection (exit status 3), the 15-second Launch Services timeout,
-and no app process.
-A fourth check after merging the main-branch test-runner fix, in [Actions run 39608770720](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39608770720),
-also passed audit, style, install, bundle inspection, and uninstall before reproducing
-the same quarantine-preserving Gatekeeper rejection and failed first launch.
-A fifth check after rebasing onto the appearance fix on `main`, in [Actions run 39624090614](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39624090614),
-again passed audit, style, install, bundle inspection, and uninstall, then reproduced
-Gatekeeper rejection (exit status 3), the 15-second Launch Services timeout, and no
-app process.
-A sixth check on the updated PR branch, in [Actions run 39627722049](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39627722049),
-built the versioned 0.1.0 candidate archive and verified its sidecar checksum
-(`30eba142232435ee01dcaed1639a0f5f60d15696fa2056e209f069bf9876cba0`). Homebrew
-audit/style, install, bundle inspection, and uninstall passed. The app retained its
-Homebrew quarantine attribute, `spctl` rejected it (status 3), Launch Services timed
-out after 15 seconds, and no app process appeared. This checksum belongs to that
-candidate run only; no public release asset or cask was published.
-
-The publish configuration is also incomplete as of 2026-10-21: the repository has no
-`release` GitHub Environment and no `RELEASE_READY` Actions variable. Before publishing,
-the maintainer must set `RELEASE_READY=true` and configure a required reviewer on the
-`release` environment. The release workflow fails closed without these controls.
-
-A seventh candidate check, [Actions run 39628624784](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39628624784),
-was triggered by a documentation-only commit. It built and verified the candidate
-archive and sidecar checksum
-(`61b875794a755b7a5d4f0481464bf01f63e92741f13aece70a1b987b0fc47e3a`). Homebrew
-audit/style, install, bundle inspection, and uninstall passed. Quarantine remained
-present, `spctl` rejected the app (status 3), Launch Services timed out after 15 seconds,
-and no app process appeared. This checksum is from the candidate run, not a public
-release asset.
-
-An eighth candidate check, [Actions run 39629627625](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39629627625),
-again built the release-shaped 0.1.0 archive and passed Homebrew strict audit, style,
-install, bundle inspection, and uninstall on the disposable Apple Silicon runner.
-Homebrew quarantine remained present; `spctl` rejected the app (status 3), Launch
-Services timed out after 15 seconds, and no app process appeared. No GitHub Release
-asset or public cask was published.
-
-A ninth candidate check, [Actions run 39631905326](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39631905326),
-again built the release-shaped 0.1.0 archive and passed Homebrew audit, style,
-install, bundle inspection, and uninstall. Quarantine remained present; `spctl`
-rejected the app (status 3), Launch Services timed out after 15 seconds, and no app
-process appeared. No GitHub Release asset or public cask was published.
-
-A tenth candidate check, [Actions run 39632574228](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39632574228),
-again built the release-shaped archive and passed Homebrew audit, style, install,
-bundle inspection, and uninstall. Homebrew quarantine remained present; `spctl`
-rejected the app (status 3), Launch Services timed out after 15 seconds, and no app
-process appeared. No GitHub Release asset or public cask was published.
+As of 2026-10-21, the repository has no `release` GitHub Environment and no
+`RELEASE_READY` Actions variable. Before publishing, the maintainer must set
+`RELEASE_READY=true` and configure at least one required reviewer on the `release`
+environment. The release workflow fails closed without these controls.
 
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
@@ -128,24 +85,25 @@ on 2026-10-21, confirming the token was available in those official namespaces a
 the time of the check. The tap's default branch had no cask at that time; the open
 tap PR adds validation and a product-neutral description, not an installable app.
 
-The planned cask will install only `Sweepdeck.app`; it will have no `zap` stanza or
-cleanup scripts, so uninstall will leave preferences and history intact. Cask version
-updates are manual and reviewed: after each app release, verify the published
-`.sha256`, update the cask's version and checksum while keeping its versioned release
-URL pattern, and open a PR in `homebrew-tap`. The tap's disposable macOS CI must pass
-`brew audit --cask --strict`,
-`brew style --cask`, install, first launch under quarantine, and uninstall before that
-PR is merged. No cross-repository Actions token is required for this manual process.
+The cask will install only `Sweepdeck.app`; it will have no `zap` stanza or cleanup
+scripts, so uninstall will leave preferences and history intact. Cask version updates
+are manual and reviewed: after each app release, verify the published `.sha256`, update
+the cask's version and checksum while keeping its versioned release URL pattern, and
+open a PR in `homebrew-tap`. The tap's disposable macOS CI must pass
+`brew audit --cask --strict`, `brew style --cask`, install, bundle/quarantine
+inspection, Gatekeeper reporting, and uninstall before that PR is merged. It records
+the approval caveat and does not simulate a user's security choice. No cross-repository
+Actions token is required for this manual process.
 
 Neither App Store submission nor notarization is required by the cask format. They
 remain Gatekeeper compatibility decisions. Homebrew's [official cask acceptance
 policy](https://docs.brew.sh/Acceptable-Casks) requires executable artifacts that
-Gatekeeper can assess to pass its checks; this project applies the same quarantine-
-preserving first-launch gate to its owner-managed tap. The current app build is ad-hoc
-signed, and at least ten quarantined candidate checks were rejected by Gatekeeper on
-a disposable Apple Silicon runner. Do not mark the release ready or publish the cask
-unless a future supported build passes the same checks. Never remove quarantine or
-bypass macOS security controls.
+Gatekeeper can assess to pass its checks. This owner-managed tap will instead state
+clearly that Sweepdeck is ad-hoc signed and may require an explicit user approval on
+first launch. That does not make it eligible for the official cask repository or mean
+that it passed Gatekeeper. The maintainer has chosen this no-cost, warning-forward
+distribution path. Never remove quarantine, disable Gatekeeper, or add cask scripts
+that bypass macOS security.
 
 At the 2026-10-21 eligibility check, the canonical Sweepdeck GitHub repository had 0
 stars, forks, and watchers and was one day old. Homebrew's [shared package acceptance

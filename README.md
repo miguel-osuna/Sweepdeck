@@ -30,7 +30,7 @@ The planned install command is:
 brew install --cask miguel-osuna/tap/sweepdeck
 ```
 
-The first versioned release and tap cask are pending release validation and review,
+The first versioned release and tap cask are still pending review and publication,
 so this command is not available yet. Once published, the fully qualified command
 will select and trust only `miguel-osuna/tap/sweepdeck`; it will not trust every
 current or future item in the tap.
@@ -46,15 +46,14 @@ brew install --cask sweepdeck
 
 When published, the cask will install only `Sweepdeck.app`. Uninstall will remove the
 app bundle and leave Sweepdeck preferences and history in place; the cask will have
-no `zap` stanza. App Store submission and notarization are not cask-format
-requirements. In the disposable
-macOS 26 Apple Silicon check, Homebrew audit, style, install, bundle inspection, and
-uninstall passed, but `spctl` rejected the quarantined app and Launch Services did
-not return within 15 seconds; no app process appeared. Repeated candidate runs,
-including [run 39632574228](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39632574228),
-reproduced the same result. Developer ID signing and notarization will not be added
-for this release attempt, so the cask and public release remain unpublished and not
-release-ready. See [compatibility evidence](COMPATIBILITY.md).
+no `zap` stanza. This free build has an ad-hoc signature, no Apple-issued Developer ID
+signature, and no notarization ticket. macOS may show a warning or require a user to
+approve the app on first launch. If macOS blocks it and you choose to proceed, try
+opening Sweepdeck, then look for **Open Anyway** in **System Settings > Privacy &
+Security** and confirm. Homebrew leaves quarantine in place; the cask will not bypass
+Gatekeeper. This is an owner-managed tap distribution path and does not pass
+Homebrew's official cask Gatekeeper requirement. See
+[compatibility evidence](COMPATIBILITY.md) before installing.
 
 On a healthy Xcode installation, `swift test` and `swift build -c release` also work.
 The wrapper keeps caches inside `.build` and handles two detected remnants of
