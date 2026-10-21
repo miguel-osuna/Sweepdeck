@@ -10,7 +10,12 @@ from pathlib import Path
 from typing import Any
 
 
-PROCESS_MARKERS = ("xctest", "swiftpm-testing-helper")
+PROCESS_MARKERS = (
+    "xctest",
+    "swiftpm-testing-helper",
+    "sweepdeckappearancetests",
+    "sweepdeckpackagetests",
+)
 REPORT_SUFFIXES = {".crash", ".ips"}
 
 
@@ -59,25 +64,61 @@ def report_json(documents: list[dict[str, Any]]) -> None:
                 print(f"  {image} {symbol} + {offset}")
 
 
+def report_process_names(documents: list[dict[str, Any]]) -> str:
+    names = []
+    for document in documents:
+        for key in ("procName", "app_name", "process", "procPath"):
+            value = document.get(key)
+            if isinstance(value, str) and value not in names:
+                names.append(value)
+    return ", ".join(names)
+
+
 def main() -> int:
-    report_directory = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "Library/Logs/DiagnosticReports"
+    report_directories = (
+        [Path(sys.argv[1])]
+        if len(sys.argv) > 1
+        else [
+            Path.home() / "Library/Logs/DiagnosticReports",
+            Path("/Library/Logs/DiagnosticReports"),
+        ]
+    )
     cutoff = time.time() - 30 * 60
+    recent_reports: list[tuple[Path, str, list[dict[str, Any]]]] = []
+    for report_directory in report_directories:
+        try:
+            for path in report_directory.iterdir():
+                if path.suffix not in REPORT_SUFFIXES or path.stat().st_mtime < cutoff:
+                    continue
+                contents = path.read_text(errors="replace")
+                documents = parse_json_documents(contents) if path.suffix == ".ips" else []
+                recent_reports.append((path, contents, documents))
+        except OSError:
+            continue
+
     reports = [
-        path
-        for path in report_directory.glob("*")
-        if path.suffix in REPORT_SUFFIXES
-        and any(marker in path.name.lower() for marker in PROCESS_MARKERS)
-        and path.stat().st_mtime >= cutoff
+        (path, contents, documents)
+        for path, contents, documents in recent_reports
+        if any(marker in " ".join((path.name.lower(), contents.lower())) for marker in PROCESS_MARKERS)
     ]
 
     if not reports:
-        print(f"No recent XCTest or swiftpm-testing-helper crash reports in {report_directory}.")
+        searched = ", ".join(str(directory) for directory in report_directories)
+        process_names = sorted({
+            name
+            for _, _, documents in recent_reports
+            for name in report_process_names(documents).split(", ")
+            if name
+        })
+        observed = f"; recent process names: {', '.join(process_names)}" if process_names else ""
+        print(
+            "No recent XCTest or SwiftPM helper crash reports found "
+            f"(recent diagnostic reports: {len(recent_reports)}{observed}; searched: {searched})."
+        )
         return 0
 
-    for path in sorted(reports, key=lambda candidate: candidate.stat().st_mtime):
+    for path, contents, documents in sorted(reports, key=lambda report: report[0].stat().st_mtime):
         print(f"Crash report: {path}")
-        contents = path.read_text(errors="replace")
-        documents = parse_json_documents(contents) if path.suffix == ".ips" else []
         if documents:
             report_json(documents)
         else:
