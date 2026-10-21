@@ -33,7 +33,7 @@ temporary_state="$temporary_dir/state"
 app_path="/Applications/Sweepdeck.app"
 tap_name="miguel-osuna/tap"
 cask_name="$tap_name/sweepdeck"
-first_launch_screenshot="${RUNNER_TEMP:-/tmp}/Sweepdeck-first-launch.png"
+first_launch_screenshot_dir="${RUNNER_TEMP:-/tmp}"
 release_url='https://github.com/miguel-osuna/Sweepdeck/releases/download/v#{version}/Sweepdeck-#{version}-macOS.zip'
 open_pid=""
 
@@ -59,6 +59,17 @@ finish() {
   exit "$result"
 }
 trap finish EXIT
+
+capture_first_launch_screenshot() {
+  local stage="$1"
+  local screenshot="$first_launch_screenshot_dir/Sweepdeck-first-launch-$stage.png"
+  if screencapture -x "$screenshot" >/dev/null 2>&1 && [[ -s "$screenshot" ]]; then
+    echo "Captured the disposable runner's $stage first-launch screen: $screenshot"
+  else
+    rm -f "$screenshot"
+    echo "The disposable runner did not provide a capturable $stage screen."
+  fi
+}
 
 mkdir -p "$(dirname "$cask_path")" "$temporary_state"
 cat > "$cask_path" <<EOF
@@ -133,7 +144,7 @@ grep -Fq 'Signature=adhoc' <<<"$signature_info" || {
   echo "Expected the current no-cost build to use an ad-hoc signature." >&2
   exit 1
 }
-rm -f "$first_launch_screenshot"
+rm -f "$first_launch_screenshot_dir"/Sweepdeck-first-launch-*.png
 
 set +e
 spctl --assess --type execute --verbose=4 "$app_path" >"$temporary_dir/gatekeeper.txt" 2>&1
@@ -143,14 +154,11 @@ open -a "$app_path" --args --sweepdeck-state-directory "$temporary_state" >"$tem
 open_pid=$!
 launch_started="$SECONDS"
 open_status=0
+early_screenshot_captured=0
 for _ in {1..15}; do
-  if [[ ! -e "$first_launch_screenshot" && "$((SECONDS - launch_started))" -ge 3 ]]; then
-    if screencapture -x "$first_launch_screenshot" >/dev/null 2>&1; then
-      echo "Captured the disposable runner's first-launch screen: $first_launch_screenshot"
-    else
-      rm -f "$first_launch_screenshot"
-      echo "The disposable runner did not provide a capturable user session."
-    fi
+  if [[ "$early_screenshot_captured" -eq 0 && "$((SECONDS - launch_started))" -ge 3 ]]; then
+    capture_first_launch_screenshot early
+    early_screenshot_captured=1
   fi
   if ! kill -0 "$open_pid" >/dev/null 2>&1; then
     wait "$open_pid"
@@ -180,6 +188,7 @@ if pgrep -x Sweepdeck >/dev/null 2>&1; then
 else
   launch_status=1
 fi
+capture_first_launch_screenshot final
 set -e
 
 cat "$temporary_dir/gatekeeper.txt"
