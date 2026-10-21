@@ -97,6 +97,12 @@ Homebrew quarantine remained present; `spctl` rejected the app (status 3), Launc
 Services timed out after 15 seconds, and no app process appeared. No GitHub Release
 asset or public cask was published.
 
+A ninth candidate check, [Actions run 39631905326](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39631905326),
+again built the release-shaped 0.1.0 archive and passed Homebrew audit, style,
+install, bundle inspection, and uninstall. Quarantine remained present; `spctl`
+rejected the app (status 3), Launch Services timed out after 15 seconds, and no app
+process appeared. No GitHub Release asset or public cask was published.
+
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
 `Casks/sweepdeck.rb`. The primary command is
@@ -116,18 +122,22 @@ version and checksum while keeping its versioned release URL pattern, and open a
 PR is merged. No cross-repository Actions token is required for this manual process.
 
 Neither App Store submission nor notarization is required by the cask format. They
-remain Gatekeeper compatibility decisions. The current app build is ad-hoc signed,
-and eight quarantined candidates were rejected by Gatekeeper on a disposable Apple
-Silicon runner. Do not mark the release ready or publish the cask unless a future
-supported build passes the same checks. Never remove quarantine or bypass macOS
-security controls.
+remain Gatekeeper compatibility decisions. Homebrew's [official cask acceptance
+policy](https://docs.brew.sh/Acceptable-Casks) requires executable artifacts that
+Gatekeeper can assess to pass its checks; this project applies the same quarantine-
+preserving first-launch gate to its owner-managed tap. The current app build is ad-hoc
+signed, and at least nine quarantined candidate checks were rejected by Gatekeeper on
+a disposable Apple Silicon runner. Do not mark the release ready or publish the cask
+unless a future supported build passes the same checks. Never remove quarantine or
+bypass macOS security controls.
 
 At the 2026-10-21 eligibility check, the canonical Sweepdeck GitHub repository had 0
-stars, forks, and watchers and was one day old. Homebrew's normal thresholds are 30
-forks or watchers or 75 stars, increased to 90 forks or watchers or 225 stars for a
+stars, forks, and watchers and was one day old. Homebrew's [shared package acceptance
+policy](https://docs.brew.sh/Package-Acceptance-Policy) normally requires 30 forks or
+watchers or 75 stars, increased to 90 forks or watchers or 225 stars for a
 self-submission; repositories under 30 days old are normally ineligible. No
-official-cask PR is being prepared; this does not prevent distribution through the
-owner-managed tap.
+official-cask PR is being prepared; these official-tap criteria do not prevent
+distribution through the owner-managed tap.
 
 ## Dependencies and security
 

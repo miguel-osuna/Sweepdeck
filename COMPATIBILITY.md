@@ -74,18 +74,26 @@ bundle inspection, and uninstall on the disposable Apple Silicon runner. Quarant
 remained intact, Gatekeeper rejected the app (status 3), Launch Services timed out
 after 15 seconds, and no app process appeared. No public release asset or cask exists.
 
-App Store submission is not required by the cask format, and notarization is not a
-cask-format requirement. Homebrew's current macOS policy does require executable
-cask artifacts to pass its Gatekeeper checks. If the quarantined candidate fails,
-release readiness remains closed because the current build cannot pass Gatekeeper and
-first-launch checks. No quarantine removal, Gatekeeper override, or cask-script bypass
-is acceptable.
+A ninth check in [candidate run 39631905326](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39631905326)
+again built the release-shaped archive and passed Homebrew audit, style, install,
+bundle inspection, and uninstall. Quarantine remained present, Gatekeeper rejected
+the app (status 3), Launch Services timed out after 15 seconds, and no app process
+appeared. No public release asset or cask exists.
+
+App Store submission and notarization are not cask-format requirements. Homebrew's
+[official cask acceptance policy](https://docs.brew.sh/Acceptable-Casks) requires
+executable artifacts that Gatekeeper can assess to pass Homebrew's Gatekeeper checks.
+This project also gates its owner-managed tap on the same quarantine-preserving first-
+launch check. Release readiness remains closed because the current candidate fails
+Gatekeeper and first launch. No quarantine removal, Gatekeeper override, or cask-script
+bypass is acceptable.
 
 Official `homebrew/cask` inclusion is not being submitted. At the time of review,
 the canonical Sweepdeck repository was one day old with 0 stars, forks, and watchers.
-Homebrew's current policy normally requires at least 30 forks or watchers or 75 stars,
-and a self-submission normally requires 90 forks or watchers or 225 stars. A repository
-under 30 days old is normally ineligible. Those criteria do not restrict owner-managed
+Homebrew's [shared package acceptance policy](https://docs.brew.sh/Package-Acceptance-Policy)
+normally requires at least 30 forks or watchers or 75 stars, and a self-submission
+normally requires 90 forks or watchers or 225 stars. A repository under 30 days old
+is normally ineligible. Those official-tap criteria do not restrict owner-managed
 third-party taps.
 
 The package keeps Swift tools version 6.2 as its minimum. CI exercises the
