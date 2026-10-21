@@ -82,11 +82,44 @@ if [[ "$command_name" == "test" || "$command_name" == "build" ]]; then
 fi
 
 frameworks="$(dirname "$toolchain_usr")/Library/Developer/Frameworks"
+testing_foundation_overlay_missing=false
 if [[ "$command_name" == "test" && -d "$frameworks/Testing.framework" ]]; then
     extra_flags+=(--disable-xctest --enable-swift-testing --no-parallel -Xswiftc -F -Xswiftc "$frameworks" -Xlinker -rpath -Xlinker "$frameworks")
     if [[ -d "$frameworks/_Testing_Foundation.framework" && ! -d "$frameworks/_Testing_Foundation.framework/Modules" ]]; then
         extra_flags+=(-Xswiftc -Xfrontend -Xswiftc -disable-cross-import-overlays)
+        testing_foundation_overlay_missing=true
         echo "Disabling missing Testing/Foundation overlay for this test build." >&2
     fi
 fi
+
+# The Command Line Tools Swift Testing helper can exit with signal 11 on a
+# combined package run that includes the AppKit appearance test. Isolate the
+# test targets only for this incomplete Testing/Foundation overlay workaround.
+# Keep explicit test-product/filter and test-list/help requests as-is.
+if [[ "$command_name" == "test" && "$testing_foundation_overlay_missing" == true ]]; then
+    has_explicit_selection=false
+    has_coverage=false
+    for argument in "$@"; do
+        case "$argument" in
+            --filter|--filter=*|--test-product|--test-product=*|--list-tests|--help|-h|list|help) has_explicit_selection=true ;;
+            --enable-code-coverage) has_coverage=true ;;
+        esac
+    done
+
+    if [[ "$has_explicit_selection" == false ]]; then
+        test_targets=(SweepdeckCoreTests SweepdeckAppearanceTests)
+        if [[ "$has_coverage" == true ]]; then
+            # SwiftPM writes one coverage report per invocation; keep the
+            # core suite last so the project's core coverage gate sees it.
+            test_targets=(SweepdeckAppearanceTests SweepdeckCoreTests)
+        fi
+        for test_target in "${test_targets[@]}"; do
+            echo "Running $test_target in an isolated Swift Testing process." >&2
+            swift test --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security \
+                "${extra_flags[@]}" --filter "$test_target" "$@"
+        done
+        exit 0
+    fi
+fi
+
 exec swift "$command_name" --disable-sandbox --cache-path .build/cache --config-path .build/config --security-path .build/security ${extra_flags[@]+"${extra_flags[@]}"} "$@"
