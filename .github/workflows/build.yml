@@ -62,3 +62,20 @@ jobs:
           test -n "$coverage_json"
           python3 scripts/check_core_coverage.py "$coverage_json" 80
       - run: bash scripts/build-app.sh
+
+  latest-macos:
+    name: macOS 27 / Xcode 27 preview
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Report platform toolchain
+        run: sw_vers && xcodebuild -version && swift --version
+      - name: Test coverage gate
+        run: python3 scripts/test-core-coverage.py
+      - run: bash scripts/swift.sh test --enable-code-coverage
+      - name: Enforce SweepdeckCore line coverage floor
+        run: |
+          coverage_json="$(find .build -path '*/codecov/Sweepdeck.json' -type f -print -quit)"
+          test -n "$coverage_json"
+          python3 scripts/check_core_coverage.py "$coverage_json" 80
+      - run: bash scripts/build-app.sh
