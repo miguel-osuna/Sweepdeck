@@ -1,5 +1,6 @@
 import SwiftUI
 import SweepdeckCore
+import SweepdeckPresentation
 
 struct ExplorerView: View {
     @ObservedObject var model: AppModel
@@ -49,20 +50,26 @@ struct ExplorerView: View {
                 Toggle("Older than \(model.preferences.boundedAgeDays) days", isOn: $onlyOld)
             }
             if model.report == nil {
-                ContentUnavailableView("Scan a folder to explore it", systemImage: "folder", description: Text("The explorer reuses scan results without background indexing.")).frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentPaneStatus(placement: .centered) {
+                    ContentUnavailableView("Scan a folder to explore it", systemImage: "folder", description: Text("The explorer reuses scan results without background indexing."))
+                }
             } else if matchedSearchKey != searchKey {
-                if let matchingProgress, matchingProgress.total > 0 {
-                    ProgressView(
-                        "Updating explorer: \(matchingProgress.processed.formatted()) of \(matchingProgress.total.formatted()) files",
-                        value: Double(matchingProgress.processed),
-                        total: Double(matchingProgress.total)
-                    ).frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ProgressView("Updating disk explorer…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentPaneStatus(placement: .topLeading) {
+                    if let matchingProgress, matchingProgress.total > 0 {
+                        ProgressView(
+                            "Updating explorer: \(matchingProgress.processed.formatted()) of \(matchingProgress.total.formatted()) files",
+                            value: Double(matchingProgress.processed),
+                            total: Double(matchingProgress.total)
+                        )
+                    } else {
+                        ProgressView("Updating disk explorer…")
+                    }
                 }
             } else if entries.isEmpty {
-                ContentUnavailableView("No files match these filters", systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text("Try a different extension, size threshold, or age filter.")).frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentPaneStatus(placement: .centered) {
+                    ContentUnavailableView("No files match these filters", systemImage: "line.3.horizontal.decrease.circle",
+                        description: Text("Try a different extension, size threshold, or age filter."))
+                }
             } else {
                 List {
                     ForEach(entries[page.range]) { entry in
