@@ -33,7 +33,7 @@ temporary_state="$temporary_dir/state"
 app_path="/Applications/Sweepdeck.app"
 tap_name="miguel-osuna/tap"
 cask_name="$tap_name/sweepdeck"
-release_url="https://github.com/miguel-osuna/Sweepdeck/releases/download/v${version}/Sweepdeck-${version}-macOS.zip"
+release_url='https://github.com/miguel-osuna/Sweepdeck/releases/download/v#{version}/Sweepdeck-#{version}-macOS.zip'
 
 finish() {
   result=$?
