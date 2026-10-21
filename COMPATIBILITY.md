@@ -25,7 +25,8 @@ trusts that cask only. A short-name install requires `brew tap miguel-osuna/tap`
 As of 2026-10-21, the public tap and first app release are not yet published. The
 current release build is ad-hoc signed, and no Homebrew-quarantined first launch has
 been verified on a disposable Apple Silicon Mac. Release workflow validation is
-being added for a versioned candidate on a disposable macOS 15 Apple Silicon runner;
+being added for a versioned candidate built on macOS 15 and tested on a disposable
+macOS 26 Apple Silicon runner;
 the test will inspect the installed bundle, run Homebrew audit/style/install/uninstall,
 preserve quarantine, assess Gatekeeper, and attempt first launch with isolated app
 state. None of those new distribution checks is recorded as passed yet.
@@ -39,8 +40,9 @@ quarantine removal, Gatekeeper override, or cask-script bypass is acceptable.
 Official `homebrew/cask` inclusion is not being submitted. At the time of review,
 the canonical Sweepdeck repository was one day old with 0 stars, forks, and watchers.
 Homebrew's current policy normally requires at least 30 forks or watchers or 75 stars,
-with higher thresholds for self-submissions, and a repository under 30 days old is
-normally ineligible. Those criteria do not restrict owner-maintained third-party taps.
+and a self-submission normally requires 90 forks or watchers or 225 stars. A repository
+under 30 days old is normally ineligible. Those criteria do not restrict owner-managed
+third-party taps.
 
 The package keeps Swift tools version 6.2 as its minimum. CI exercises the
 latest stable Swift.org toolchain (6.4.1) on macOS 26 and a separate Swift 6.4 /

@@ -31,15 +31,16 @@ retains both files in the seven-day candidate artifact, then reuses those exact 
 after the protected publish job creates the tag and GitHub Release. The app ZIP is a
 minimal app bundle; it does not contain a separate installer or support files.
 
-Before publication, the candidate job runs the cask through Homebrew audit and style,
-installs and uninstalls it on the `macos-15` Apple Silicon runner, checks the installed
+Before publication, a separate Homebrew candidate job downloads those exact files and
+runs the cask through Homebrew audit and style, installs and uninstalls it on a
+disposable `macos-26` Apple Silicon runner, checks the installed
 bundle and Homebrew quarantine, runs `spctl`, and attempts a first launch with
 `SWEEPDECK_STATE_DIR` pointed at temporary state. The test never removes quarantine,
 disables Gatekeeper, scans personal folders, or adds cask lifecycle scripts. A failed
 Gatekeeper or launch check fails the candidate job and prevents the protected publish
 job from running. The public tap's pull-request workflow will repeat audit, style,
 install, uninstall and first-launch checks against the actual versioned GitHub Release
-URL before a cask update can merge.
+URL on `macos-26` before a cask update can merge.
 
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
@@ -67,9 +68,11 @@ Gatekeeper blocks first launch, stop and ask whether to add Developer ID signing
 notarization. Never remove quarantine or bypass macOS security controls.
 
 At the 2026-10-21 eligibility check, the canonical Sweepdeck GitHub repository had 0
-stars, forks, and watchers and was one day old. That is below Homebrew's normal public
-notability thresholds for a self-submitted official cask. No official-cask PR is being
-prepared; this does not prevent distribution through the owner-maintained tap.
+stars, forks, and watchers and was one day old. Homebrew's normal thresholds are 30
+forks or watchers or 75 stars, increased to 90 forks or watchers or 225 stars for a
+self-submission; repositories under 30 days old are normally ineligible. No
+official-cask PR is being prepared; this does not prevent distribution through the
+owner-managed tap.
 
 ## Dependencies and security
 

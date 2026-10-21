@@ -100,11 +100,6 @@ jobs:
           SWEEPDECK_VERSION: ${{ steps.preflight.outputs.version }}
           SWEEPDECK_BUILD_STAGE: ${{ runner.temp }}/SweepdeckBuild-stage
         run: bash scripts/build-app.sh
-      - name: Validate the candidate through Homebrew on Apple Silicon
-        if: steps.preflight.outputs.version != ''
-        env:
-          SWEEPDECK_VERSION: ${{ steps.preflight.outputs.version }}
-        run: bash scripts/test-homebrew-candidate.sh "$SWEEPDECK_VERSION" "dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
       - name: Keep the candidate available for manual QA
         if: steps.preflight.outputs.version != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -116,8 +111,26 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  publish:
+  homebrew_candidate:
     needs: [candidate]
+    if: needs.candidate.outputs.release_version != ''
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download the exact release candidate
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: Sweepdeck-release-candidate-${{ needs.candidate.outputs.release_version }}
+          path: dist
+      - name: Validate candidate through Homebrew on latest macOS Apple Silicon
+        env:
+          SWEEPDECK_VERSION: ${{ needs.candidate.outputs.release_version }}
+        run: bash scripts/test-homebrew-candidate.sh "$SWEEPDECK_VERSION" "dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
+
+  publish:
+    needs: [candidate, homebrew_candidate]
     if: needs.candidate.outputs.release_version != ''
     runs-on: macos-15
     environment: release
