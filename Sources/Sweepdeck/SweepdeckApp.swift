@@ -7,6 +7,14 @@ struct SweepdeckApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model: AppModel
 
+    private var selectedColorScheme: ColorScheme? {
+        switch model.preferences.appearanceMode {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
     @MainActor
     init() {
         let model = AppModel()
@@ -20,6 +28,7 @@ struct SweepdeckApp: App {
                     delegate.model = model
                 }
                 .frame(minWidth: 940, minHeight: 650)
+                .preferredColorScheme(selectedColorScheme)
                 .tint(.teal)
         }
         .defaultSize(width: 1180, height: 800)
