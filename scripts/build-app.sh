@@ -15,9 +15,10 @@ if [[ -n "${SWEEPDECK_VERSION:-}" && -z "${SWEEPDECK_ARCHIVE_PATH:-}" ]]; then
   archive="$PWD/dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
 fi
 rm -rf "$bundle"
-mkdir -p "$bundle/Contents/MacOS" "$PWD/dist" "$(dirname "$archive")"
+mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources" "$PWD/dist" "$(dirname "$archive")"
 cp "$binary_dir/Sweepdeck" "$bundle/Contents/MacOS/Sweepdeck"
 cp Resources/Info.plist "$bundle/Contents/Info.plist"
+cp Resources/Sweepdeck.icns "$bundle/Contents/Resources/Sweepdeck.icns"
 if [[ -n "${SWEEPDECK_VERSION:-}" ]]; then
   bash scripts/set-app-version.sh "$bundle/Contents/Info.plist" "$SWEEPDECK_VERSION"
 fi
