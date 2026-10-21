@@ -108,7 +108,7 @@ under `/private/tmp/SweepdeckUIFixture`.
   entries in 19.4 seconds, with 44 skipped and 39 issues. The review showed
   13,483 older-download candidates; none were selected or moved. Recent installers
   did not meet the default 60-day threshold.
-- Settings was not visually verified. Both the staged release app and a fresh
+- Settings flows were not fully verified. Both the staged release app and a fresh
   copy with a distinct bundle ID rendered their Dashboards and remained listed
   as running, but switching to Settings closed the computer-use pipe. The bridge
   worked with Finder in the same session;
@@ -117,20 +117,25 @@ under `/private/tmp/SweepdeckUIFixture`.
   not prove whether Settings itself works or fails. Its code was reviewed, and
   its preference persistence and bounds are covered by unit tests; visual checks
   of Settings controls and flows remain outstanding.
-- A user-supplied recording shows the reported mix at about 12 seconds: System is
-  selected, the sidebar is light, and the detail pane is dark. The next sampled
-  frame selects Light; it does not establish whether the mix persisted after the
-  user changed modes. The root SwiftUI view applies explicit Light/Dark choices
-  to its `NSWindow`; System clears that window override. The hosted split-view
+- A user-supplied 13-second recording of the Sweepdeck Operation Probe shows the
+  reported mix in two consecutive samples two seconds apart: System is selected,
+  the sidebar is light, and the detail pane is dark. The following sample selects
+  Light and the detail pane is light again. This confirms the mixed rendering
+  persisted across samples, but does not establish the exact duration or whether
+  the recording used the current production build. The root SwiftUI view applies
+  explicit Light/Dark choices to its `NSWindow`; System clears that window
+  override. The hosted split-view
   regression checks both SwiftUI schemes and AppKit effective appearance through
   Dark → System Light, system appearance changes, and forced Light. It also
   compares rendered 1,200 × 800 bitmap output: Dark must differ from Light, and
   System Light reached after Dark must match forced Light pixel-for-pixel. The
-  full local 43-test run passes. This is an in-memory rendering comparison, not a
+  full local 43-test run passes, and [CI run #103](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39531416616)
+  passed tests, the 80% core coverage gate, and release builds on all three
+  macOS lanes. The pixel test is an in-memory rendering comparison, not a
   checked-in golden screenshot or a capture of the full production app. The
-  computer-use bridge returned `Sky Computer Use native pipe closed before
-  response` when selecting the running app, so a fresh production-app comparison
-  remains outstanding.
+  follow-up process check found no running Sweepdeck GUI app; the Orca CLI failed
+  with `Unable to determine Orca.app path from symlink: /usr/local/bin/orca`, so
+  a fresh production-app comparison remains outstanding.
 
 The broader end-to-end UI checks were manual, fixture-based checks rather than
 XCUITest flows. The appearance transition has a hosted-window rendered-image
