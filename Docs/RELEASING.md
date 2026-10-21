@@ -42,6 +42,10 @@ job from running. The public tap's pull-request workflow will repeat audit, styl
 install, uninstall and first-launch checks against the actual versioned GitHub Release
 URL on `macos-26` before a cask update can merge.
 
+For GUI launch isolation, the disposable runner temporarily sets
+`SWEEPDECK_STATE_DIR` in its launchd environment and unsets it from the script's exit
+trap; the local developer machine and its Homebrew state are not used by this check.
+
 The first disposable candidate check ran on 2026-10-21 in
 [Actions run 39569344355](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39569344355).
 Homebrew strict audit, style, install, installed-bundle inspection, and uninstall
@@ -103,6 +107,12 @@ install, bundle inspection, and uninstall. Quarantine remained present; `spctl`
 rejected the app (status 3), Launch Services timed out after 15 seconds, and no app
 process appeared. No GitHub Release asset or public cask was published.
 
+A tenth candidate check, [Actions run 39632574228](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39632574228),
+again built the release-shaped archive and passed Homebrew audit, style, install,
+bundle inspection, and uninstall. Homebrew quarantine remained present; `spctl`
+rejected the app (status 3), Launch Services timed out after 15 seconds, and no app
+process appeared. No GitHub Release asset or public cask was published.
+
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
 `Casks/sweepdeck.rb`. The primary command is
@@ -113,11 +123,17 @@ qualified cask for this command. To use the short command, users must run
 `brew install --cask sweepdeck`. A fresh Homebrew setup cannot use the short command
 without those steps or inclusion in an official tap.
 
-The cask installs only `Sweepdeck.app`; it has no `zap` stanza or cleanup scripts, so
-uninstall leaves preferences and history intact. Cask version updates are manual and
-reviewed: after each app release, verify the published `.sha256`, update the cask's
-version and checksum while keeping its versioned release URL pattern, and open a PR in
-`homebrew-tap`. The tap's disposable macOS CI must pass `brew audit --cask --strict`,
+The Homebrew cask and formula API endpoints for `sweepdeck` both returned HTTP 404
+on 2026-10-21, confirming the token was available in those official namespaces at
+the time of the check. The tap's default branch had no cask at that time; the open
+tap PR adds validation and a product-neutral description, not an installable app.
+
+The planned cask will install only `Sweepdeck.app`; it will have no `zap` stanza or
+cleanup scripts, so uninstall will leave preferences and history intact. Cask version
+updates are manual and reviewed: after each app release, verify the published
+`.sha256`, update the cask's version and checksum while keeping its versioned release
+URL pattern, and open a PR in `homebrew-tap`. The tap's disposable macOS CI must pass
+`brew audit --cask --strict`,
 `brew style --cask`, install, first launch under quarantine, and uninstall before that
 PR is merged. No cross-repository Actions token is required for this manual process.
 
@@ -126,7 +142,7 @@ remain Gatekeeper compatibility decisions. Homebrew's [official cask acceptance
 policy](https://docs.brew.sh/Acceptable-Casks) requires executable artifacts that
 Gatekeeper can assess to pass its checks; this project applies the same quarantine-
 preserving first-launch gate to its owner-managed tap. The current app build is ad-hoc
-signed, and at least nine quarantined candidate checks were rejected by Gatekeeper on
+signed, and at least ten quarantined candidate checks were rejected by Gatekeeper on
 a disposable Apple Silicon runner. Do not mark the release ready or publish the cask
 unless a future supported build passes the same checks. Never remove quarantine or
 bypass macOS security controls.

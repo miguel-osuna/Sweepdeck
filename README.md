@@ -44,13 +44,14 @@ brew trust --cask miguel-osuna/tap/sweepdeck
 brew install --cask sweepdeck
 ```
 
-The cask installs `Sweepdeck.app` only. Uninstall removes the app bundle and leaves
-Sweepdeck preferences and history in place; the cask has no `zap` stanza. App Store
-submission and notarization are not cask-format requirements. In the disposable
+When published, the cask will install only `Sweepdeck.app`. Uninstall will remove the
+app bundle and leave Sweepdeck preferences and history in place; the cask will have
+no `zap` stanza. App Store submission and notarization are not cask-format
+requirements. In the disposable
 macOS 26 Apple Silicon check, Homebrew audit, style, install, bundle inspection, and
 uninstall passed, but `spctl` rejected the quarantined app and Launch Services did
 not return within 15 seconds; no app process appeared. Repeated candidate runs,
-including [run 39631905326](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39631905326),
+including [run 39632574228](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39632574228),
 reproduced the same result. Developer ID signing and notarization will not be added
 for this release attempt, so the cask and public release remain unpublished and not
 release-ready. See [compatibility evidence](COMPATIBILITY.md).

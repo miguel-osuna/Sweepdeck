@@ -22,6 +22,13 @@ trusts that cask only. A short-name install requires `brew tap miguel-osuna/tap`
 `brew trust --cask miguel-osuna/tap/sweepdeck`, then
 `brew install --cask sweepdeck`.
 
+On 2026-10-21, Homebrew's public cask and formula API endpoints for `sweepdeck`
+both returned HTTP 404, so that token was available in the official namespaces at
+the time of the check. The owner tap's default branch also had no
+`Casks/sweepdeck.rb`; its open PR added the validation workflow and neutral tap
+description only. Token availability can change and does not make an unpublished
+install command usable.
+
 As of 2026-10-21, the public tap and first app release are not yet published. The
 release-shaped 0.1.0 candidate archive built on the disposable macOS 26 Apple Silicon
 runner and its SHA-256 (`152f232d2aa7b0df502f341cac3bd2c00773bea68c5b32e8f21eac47b6225ab7`)
@@ -79,6 +86,12 @@ again built the release-shaped archive and passed Homebrew audit, style, install
 bundle inspection, and uninstall. Quarantine remained present, Gatekeeper rejected
 the app (status 3), Launch Services timed out after 15 seconds, and no app process
 appeared. No public release asset or cask exists.
+
+A tenth check in [candidate run 39632574228](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39632574228)
+again built the release-shaped archive and passed Homebrew audit, style, install,
+bundle inspection, and uninstall with quarantine present. Gatekeeper rejected the app
+(status 3), Launch Services timed out after 15 seconds, and no app process appeared.
+No public release asset or cask exists.
 
 App Store submission and notarization are not cask-format requirements. Homebrew's
 [official cask acceptance policy](https://docs.brew.sh/Acceptable-Casks) requires
