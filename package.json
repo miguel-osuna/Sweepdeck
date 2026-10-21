@@ -1,0 +1,15 @@
+{
+  "name": "sweepdeck-release-tools",
+  "private": true,
+  "description": "Pinned semantic-release tooling for Sweepdeck",
+  "scripts": {
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run",
+    "test:release-tools": "node scripts/test-release-config.mjs && bash scripts/test-release-version.sh && bash scripts/test-release-environment.sh && bash scripts/test-release-baseline.sh"
+  },
+  "devDependencies": {
+    "@semantic-release/exec": "7.1.0",
+    "@semantic-release/github": "12.0.10",
+    "semantic-release": "25.0.9"
+  }
+}
