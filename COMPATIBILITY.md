@@ -27,24 +27,33 @@ The owner tap's default branch had no `Casks/sweepdeck.rb`; its open PR contains
 validation workflow and product-neutral repository description. Token availability
 does not make an unpublished install command usable.
 
-The latest candidate check, [Actions run 39633942051](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39633942051),
+The latest successful candidate check, [Actions run 39640681352](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39640681352),
 built the release-shaped 0.1.0 archive and verified its sidecar SHA-256
-(`52e7ddcb8433da194fc4cf93997d03a8d50ba220ea036b5e5460ebf26ead4a20`). On the
-disposable macOS 26 Apple Silicon runner, `brew audit --cask --strict`, `brew style
---cask`, install, app bundle/version inspection, quarantine inspection, and uninstall
-passed. `codesign --verify --strict` accepted the app's ad-hoc signature. Gatekeeper's
-`spctl --assess --type execute --verbose=4` rejected the quarantined app (status 3).
-The `open -a` command timed out after 15 seconds, but a Sweepdeck process was observed.
-The runner did not capture the alert or inspect visible UI, so this does not establish
-what prompt a user sees or verify an interactive launch. This was a temporary local
-cask using a candidate ZIP; no public release asset or tap cask was installed.
-Earlier candidate attempts reproduced the rejection and timeout. Their notes said no
-process appeared, but the `pgrep` status recorded by the script was zero, meaning a
-process was found. No candidate run simulated a user's approval.
+(`9b65ff9ce68a5a5dd7117c754feaa82c4053c10ba4da4aef1840c5289b9c3389`). On the
+disposable macOS 26 Apple Silicon runner, Homebrew strict audit and style passed;
+install, bundle/version inspection, quarantine inspection, and uninstall also passed.
+The installed artifact was only `Sweepdeck.app`; its executable was arm64 and the
+Homebrew caveat appeared in `brew info --cask`. The app retained its Homebrew quarantine
+attribute and `codesign --verify --strict` accepted its ad-hoc signature.
+
+Gatekeeper's `spctl --assess --type execute --verbose=4` rejected the quarantined app
+(status 3). The captured first-launch screen showed **“Sweepdeck” Not Opened** and
+“Apple could not verify ‘Sweepdeck’ is free of malware,” with **Move to Trash** and
+**Done** buttons. Launch Services timed out after 15 seconds (status 124), and the
+Sweepdeck process was observed with its temporary state directory argument. Homebrew
+uninstall removed `/Applications/Sweepdeck.app`. The runner did not approve the app or
+verify a successful launch after approval. The screen is retained in the Actions run's
+one-day artifact. This was a temporary local cask using a candidate ZIP; no public
+release asset or tap cask was installed. The earlier style failure in
+[run 39639700468](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39639700468)
+was caused by stanza order in the generated cask and was corrected before the passing
+run above.
 
 The selected no-cost distribution path keeps quarantine intact and tells users that
-macOS may show a warning or ask them to approve Sweepdeck in System Settings > Privacy
-& Security. The cask will not remove quarantine, disable Gatekeeper, or automate that
+macOS blocks the first open until they decide whether to approve Sweepdeck in System
+Settings > Privacy & Security. Apple says **Open Anyway** is available for about an hour
+after an attempted open; the candidate screen itself offered only **Move to Trash** and
+**Done**. The cask will not remove quarantine, disable Gatekeeper, or automate that
 choice. This is not a Gatekeeper pass and does not meet the official
 `homebrew/cask` security requirement; official inclusion is not being pursued. App
 Store submission and notarization are not requirements of the cask format. Cask

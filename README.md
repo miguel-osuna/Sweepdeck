@@ -47,12 +47,17 @@ brew install --cask sweepdeck
 When published, the cask will install only `Sweepdeck.app`. Uninstall will remove the
 app bundle and leave Sweepdeck preferences and history in place; the cask will have
 no `zap` stanza. This free build has an ad-hoc signature, no Apple-issued Developer ID
-signature, and no notarization ticket. macOS may show a warning or require a user to
-approve the app on first launch. If macOS blocks it and you choose to proceed, try
-opening Sweepdeck, then look for **Open Anyway** in **System Settings > Privacy &
-Security** and confirm. Homebrew leaves quarantine in place; the cask will not bypass
-Gatekeeper. This is an owner-managed tap distribution path and does not pass
-Homebrew's official cask Gatekeeper requirement. See
+signature, and no notarization ticket. In the disposable macOS 26 first-launch check,
+Gatekeeper showed **“Sweepdeck” Not Opened** and said Apple could not verify that it was
+free of malware. The dialog offered **Move to Trash** or **Done**. If you choose to
+proceed, click **Done**, then open **System Settings > Privacy & Security** and choose
+**Open Anyway** under Security if macOS offers it. Apple says that option is available
+for about an hour after an attempted open. Read Apple's [security
+guidance](https://support.apple.com/en-au/102445) and make that choice only if you trust
+the app and its source. Our check did not approve the app or verify a successful
+post-approval launch. Homebrew leaves quarantine in place; the cask will not bypass
+Gatekeeper. This owner-managed tap path does not pass Homebrew's official cask Gatekeeper
+requirement. See
 [compatibility evidence](COMPATIBILITY.md) before installing.
 
 On a healthy Xcode installation, `swift test` and `swift build -c release` also work.

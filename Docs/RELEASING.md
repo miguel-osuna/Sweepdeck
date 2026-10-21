@@ -54,19 +54,22 @@ For GUI launch isolation, the disposable runner passes
 This keeps preferences and history in the runner's temporary directory without changing
 its launch session configuration.
 
-The latest completed candidate check, [Actions run 39633942051](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39633942051),
+The latest successful candidate check, [Actions run 39640681352](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39640681352),
 built the release-shaped 0.1.0 archive and verified its sidecar SHA-256
-(`52e7ddcb8433da194fc4cf93997d03a8d50ba220ea036b5e5460ebf26ead4a20`). Homebrew
-strict audit, style, install, bundle/version inspection, quarantine inspection, and
-uninstall passed. The ad-hoc code signature verified, while
-`spctl --assess --type execute --verbose=4` rejected the quarantined app with status 3.
-`open -a` did not return within 15 seconds (status 124), but the Sweepdeck process was
-observed. The runner did not capture the alert or inspect visible app UI, so this result
-does not establish what users see or confirm a successful interactive launch. It was a
-candidate archive through a temporary local tap, not a public release asset or cask.
-Earlier disposable runs reported the same Gatekeeper rejection and launch timeout; their
-notes incorrectly said no process appeared, but the recorded `pgrep` status was zero,
-which means a process was found. The CI evidence did not simulate a user's approval.
+(`9b65ff9ce68a5a5dd7117c754feaa82c4053c10ba4da4aef1840c5289b9c3389`). Homebrew strict
+audit and style, install, app bundle/version and quarantine inspection, and uninstall
+passed on the disposable Apple Silicon runner. The installed app contained an arm64
+executable; the caveat appeared in Homebrew's install output. The ad-hoc signature
+verified, while `spctl --assess --type execute --verbose=4` rejected the quarantined app
+with status 3. The captured first-launch dialog said **“Sweepdeck” Not Opened** because
+Apple could not verify that it was free of malware; it offered **Move to Trash** and
+**Done**. `open -a` did not return within 15 seconds (status 124), though the Sweepdeck
+process was observed. The run did not approve the app or verify a post-approval launch.
+It was a candidate archive through a temporary local tap, not a public release asset or
+cask. The screenshot is attached to the Actions run for one day. The earlier style
+failure in [run 39639700468](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39639700468)
+was fixed before this passing run. See [compatibility evidence](../COMPATIBILITY.md) for
+the inspected screen and detailed checks.
 
 As of 2026-10-21, the repository has no `release` GitHub Environment and no
 `RELEASE_READY` Actions variable. Before publishing, the maintainer must set
