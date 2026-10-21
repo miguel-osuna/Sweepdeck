@@ -22,6 +22,44 @@ open dist/Sweepdeck.app
 The build creates a locally ad-hoc signed app. No developer identity or provisioning
 profile is needed. This is not a notarized public distribution build.
 
+## Homebrew distribution
+
+The planned install command is:
+
+```sh
+brew install --cask miguel-osuna/tap/sweepdeck
+```
+
+The first versioned release and tap cask are still pending review and publication,
+so this command is not available yet. Once published, the fully qualified command
+will select and trust only `miguel-osuna/tap/sweepdeck`; it will not trust every
+current or future item in the tap.
+
+To install by the short name instead, users must first tap the repository and trust
+this cask explicitly:
+
+```sh
+brew tap miguel-osuna/tap
+brew trust --cask miguel-osuna/tap/sweepdeck
+brew install --cask sweepdeck
+```
+
+When published, the cask will install only `Sweepdeck.app`. Uninstall will remove the
+app bundle and leave Sweepdeck preferences and history in place; the cask will have
+no `zap` stanza. This free build has an ad-hoc signature, no Apple-issued Developer ID
+signature, and no notarization ticket. In the disposable macOS 26 first-launch check,
+Gatekeeper showed **“Sweepdeck” Not Opened** and said Apple could not verify that it was
+free of malware. The dialog offered **Move to Trash** or **Done**. If you choose to
+proceed, click **Done**, then open **System Settings > Privacy & Security** and choose
+**Open Anyway** under Security if macOS offers it. Apple says that option is available
+for about an hour after an attempted open. Read Apple's [security
+guidance](https://support.apple.com/en-au/102445) and make that choice only if you trust
+the app and its source. Our check did not approve the app or verify a successful
+post-approval launch. Homebrew leaves quarantine in place; the cask will not bypass
+Gatekeeper. This owner-managed tap path does not pass Homebrew's official cask Gatekeeper
+requirement. See
+[compatibility evidence](COMPATIBILITY.md) before installing.
+
 On a healthy Xcode installation, `swift test` and `swift build -c release` also work.
 The wrapper keeps caches inside `.build` and handles two detected remnants of
 incomplete Command Line Tools upgrades without modifying installed tools. See
@@ -75,9 +113,9 @@ History can contain file paths and retains at most 50 operations / 1,000 item
 results. Diagnostics export contains counts and OS/app versions, not paths or
 file contents. No data is sent anywhere.
 
-For isolated validation, set `SWEEPDECK_STATE_DIR` to a temporary state directory
-when launching the executable. This only redirects preferences/history; it does
-not add folders, scan, or authorize cleanup.
+For isolated GUI validation, pass `--sweepdeck-state-directory <temporary-directory>`
+to the app at launch. This redirects only preferences/history; it does not add folders,
+scan, or authorize cleanup.
 
 ## Maintenance
 

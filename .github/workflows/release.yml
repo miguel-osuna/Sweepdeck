@@ -98,18 +98,48 @@ jobs:
         if: steps.preflight.outputs.version != ''
         env:
           SWEEPDECK_VERSION: ${{ steps.preflight.outputs.version }}
+          SWEEPDECK_BUILD_STAGE: ${{ runner.temp }}/SweepdeckBuild-stage
         run: bash scripts/build-app.sh
       - name: Keep the candidate available for manual QA
         if: steps.preflight.outputs.version != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Sweepdeck-release-candidate-${{ steps.preflight.outputs.version }}
-          path: dist/Sweepdeck-macOS.zip
+          path: |
+            dist/Sweepdeck-${{ steps.preflight.outputs.version }}-macOS.zip
+            dist/Sweepdeck-${{ steps.preflight.outputs.version }}-macOS.zip.sha256
           if-no-files-found: error
           retention-days: 7
 
-  publish:
+  homebrew_candidate:
     needs: [candidate]
+    if: needs.candidate.outputs.release_version != ''
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download the exact release candidate
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: Sweepdeck-release-candidate-${{ needs.candidate.outputs.release_version }}
+          path: dist
+      - name: Validate Homebrew install and report first-launch approval behavior
+        env:
+          SWEEPDECK_VERSION: ${{ needs.candidate.outputs.release_version }}
+          SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' && runner.arch == 'ARM64' }}
+        run: bash scripts/test-homebrew-candidate.sh "$SWEEPDECK_VERSION" "dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
+      - name: Preserve disposable first-launch screen for review
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Sweepdeck-first-launch-screen-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/Sweepdeck-first-launch-${{ github.run_id }}-${{ github.run_attempt }}-*.png
+          if-no-files-found: ignore
+          retention-days: 1
+
+  publish:
+    needs: [candidate, homebrew_candidate]
     if: needs.candidate.outputs.release_version != ''
     runs-on: macos-15
     environment: release
@@ -119,6 +149,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Download the tested release candidate
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: Sweepdeck-release-candidate-${{ needs.candidate.outputs.release_version }}
+          path: dist
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
@@ -128,3 +163,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run release
+      - name: Verify and attach the tested app archive and checksum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.candidate.outputs.release_version }}
+        run: |
+          set -euo pipefail
+          archive="dist/Sweepdeck-${RELEASE_VERSION}-macOS.zip"
+          checksum="$archive.sha256"
+          (cd dist && shasum -a 256 --check "$(basename "$checksum")")
+          release_endpoint="repos/${GITHUB_REPOSITORY}/releases/tags/v${RELEASE_VERSION}"
+          for asset in "$archive" "$checksum"; do
+            asset_name="$(basename "$asset")"
+            expected_digest="sha256:$(shasum -a 256 "$asset" | awk '{print $1}')"
+            remote_digest="$(gh api "$release_endpoint" --jq ".assets[]? | select(.name == \"${asset_name}\") | .digest // empty")"
+            if [[ -z "$remote_digest" ]]; then
+              gh release upload "v${RELEASE_VERSION}" "$asset" --repo "$GITHUB_REPOSITORY"
+              remote_digest="$(gh api "$release_endpoint" --jq ".assets[]? | select(.name == \"${asset_name}\") | .digest // empty")"
+            fi
+            [[ "$remote_digest" == "$expected_digest" ]] || {
+              echo "Release asset $asset_name is missing or does not match the verified candidate." >&2
+              exit 1
+            }
+          done

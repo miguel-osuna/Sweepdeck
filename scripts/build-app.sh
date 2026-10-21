@@ -8,11 +8,14 @@ fi
 
 bash scripts/swift.sh build -c release
 binary_dir="$(bash scripts/swift.sh build -c release --show-bin-path)"
-stage="/private/tmp/SweepdeckBuild-stage"
+stage="${SWEEPDECK_BUILD_STAGE:-/private/tmp/SweepdeckBuild-stage}"
 bundle="$stage/Sweepdeck.app"
 archive="${SWEEPDECK_ARCHIVE_PATH:-$PWD/dist/Sweepdeck-macOS.zip}"
+if [[ -n "${SWEEPDECK_VERSION:-}" && -z "${SWEEPDECK_ARCHIVE_PATH:-}" ]]; then
+  archive="$PWD/dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
+fi
 rm -rf "$bundle"
-mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources" "$PWD/dist" "$(dirname "$archive")"
+mkdir -p "$bundle/Contents/MacOS" "$PWD/dist" "$(dirname "$archive")"
 cp "$binary_dir/Sweepdeck" "$bundle/Contents/MacOS/Sweepdeck"
 cp Resources/Info.plist "$bundle/Contents/Info.plist"
 if [[ -n "${SWEEPDECK_VERSION:-}" ]]; then
@@ -28,7 +31,9 @@ codesign --force --sign - "$bundle"
 codesign --verify --strict "$bundle"
 ditto -c -k --keepParent --norsrc --noextattr --noqtn "$bundle" "$archive.tmp"
 mv -f "$archive.tmp" "$archive"
+(cd "$(dirname "$archive")" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
 rm -rf "$PWD/dist/Sweepdeck.app"
 ln -s "$bundle" "$PWD/dist/Sweepdeck.app"
 codesign --verify --strict "$PWD/dist/Sweepdeck.app"
 echo "Built and verified $archive"
+cat "$archive.sha256"
