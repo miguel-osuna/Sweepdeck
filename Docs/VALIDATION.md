@@ -4,10 +4,13 @@ Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
 Command Line Tools but no active full Xcode installation. The latest local run
 passed 43 Swift tests, measured 581/680 executable `SweepdeckCore` lines (85.4%)
 and built and verified the release bundle. GitHub Actions run
-[#70](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39506723318) passed
-the earlier 41-test suite, the 80% coverage floor and release build with Swift
-6.2 on `macos-15` and Swift 6.4.1 on `macos-26`. Interactive UI behavior was not
-checked on either CI runner.
+[#92](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39522535351) passed
+all three platform lanes: Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`,
+and Swift 6.4 on macOS 27.0.1 with Xcode 27.0 preview. Each lane passed all 43
+tests, the 80% coverage floor and the release build. The first macOS 15 attempt
+reported signal 11 after all 43 tests passed; rerunning that job succeeded, so
+continue monitoring this test-host flake. Interactive UI behavior was not checked
+on any CI runner.
 
 ## Automated checks
 
@@ -37,12 +40,13 @@ checked on either CI runner.
 - `bash scripts/build-app.sh` passed. It built the release binary, ad-hoc signed and
   strictly verified the app bundle in temporary storage, and produced
   `dist/Sweepdeck-macOS.zip`.
-- GitHub Actions run [#70](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39506723318)
-  passed the 41-test suite, 80% `SweepdeckCore` line-coverage floor and release
-  build on the `macos-15` runner with Swift 6.2 and on the `macos-26` runner with
-  Swift 6.4.1. The baseline lane also uploaded the app archive. These checks
-  verify automated compatibility at the deployment floor and with the latest
-  stable toolchain, not interactive UI behavior on either macOS version.
+- GitHub Actions run [#92](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39522535351)
+  passed all 43 tests, the 80% `SweepdeckCore` line-coverage floor and release
+  build with Swift 6.2 on `macos-15`, Swift 6.4.1 on `macos-26`, and Swift 6.4 on
+  macOS 27.0.1 with Xcode 27.0 preview. The first `macos-15` test-host process
+  exited with signal 11 after reporting all tests passed; a targeted rerun passed
+  tests, coverage, and build. This is recorded for monitoring rather than treated
+  as a clean first attempt. These checks do not verify interactive UI behavior.
 - Standalone CLI smokes used generated fixtures only, but could not verify Trash
   without the app's folder-picker flow: direct `FileManager.trashItem` returned
   Cocoa error 513 / OSStatus -5000 (`afpAccessDenied`), and `MacTrashService`
