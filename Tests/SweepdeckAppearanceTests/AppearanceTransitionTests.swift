@@ -50,8 +50,8 @@ private struct SchemeProbe: View {
         backing: .buffered,
         defer: false
     )
+    // Keep the hosted window offscreen so this scheme regression remains headless in CI.
     window.contentView = NSHostingView(rootView: AppearanceHarness(selection: selection, effectiveScheme: effectiveScheme))
-    window.orderFrontRegardless()
     defer {
         window.close()
         application.appearance = originalApplicationAppearance
