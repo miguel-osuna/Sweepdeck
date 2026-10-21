@@ -37,16 +37,22 @@ return within 15 seconds and no Sweepdeck process appeared. The runner then remo
 the app with Homebrew uninstall. This was a release-shaped candidate ZIP from a
 temporary local file URL, not a public GitHub Release asset; the recorded checksum is
 not the hash for a published release. The versioned GitHub Release asset and public
-cask remain unpublished pending a Developer ID signing and notarization decision.
+cask remain unpublished. Developer ID signing and notarization are not being added
+for this release attempt, and this candidate is not release-ready.
 A repeat in [candidate run 39570883868](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39570883868)
 passed the same Homebrew checks and reproduced the quarantine rejection and failed
 first-launch result after the smoke command was bounded.
+A third check in [candidate run 39571447748](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39571447748)
+again passed Homebrew audit, style, install, bundle inspection, and uninstall while
+preserving quarantine; Gatekeeper rejected the app (exit status 3), Launch Services
+timed out after 15 seconds, and no app process appeared.
 
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable
 cask artifacts to pass its Gatekeeper checks. If the quarantined candidate fails,
-release readiness remains closed until a signing/notarization decision is made; no
-quarantine removal, Gatekeeper override, or cask-script bypass is acceptable.
+release readiness remains closed because the current build cannot pass Gatekeeper and
+first-launch checks. No quarantine removal, Gatekeeper override, or cask-script bypass
+is acceptable.
 
 Official `homebrew/cask` inclusion is not being submitted. At the time of review,
 the canonical Sweepdeck repository was one day old with 0 stars, forks, and watchers.
