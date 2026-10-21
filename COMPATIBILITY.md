@@ -23,13 +23,21 @@ trusts that cask only. A short-name install requires `brew tap miguel-osuna/tap`
 `brew install --cask sweepdeck`.
 
 As of 2026-10-21, the public tap and first app release are not yet published. The
-current release build is ad-hoc signed, and no Homebrew-quarantined first launch has
-been verified on a disposable Apple Silicon Mac. Release workflow validation is
-being added for a versioned candidate built on macOS 15 and tested on a disposable
-macOS 26 Apple Silicon runner;
-the test will inspect the installed bundle, run Homebrew audit/style/install/uninstall,
-preserve quarantine, assess Gatekeeper, and attempt first launch with isolated app
-state. None of those new distribution checks is recorded as passed yet.
+release-shaped 0.1.0 candidate archive built on the disposable macOS 26 Apple Silicon
+runner and its SHA-256 (`152f232d2aa7b0df502f341cac3bd2c00773bea68c5b32e8f21eac47b6225ab7`)
+matched its sidecar. In [Homebrew candidate run 39569344355](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39569344355),
+`brew audit --cask --strict`, `brew style --cask`, install, installed-bundle inspection,
+and uninstall passed using a temporary local tap. `brew info --cask` reported the
+Sweepdeck 0.1.0 app, and inspection confirmed the expected ARM64 executable and app
+bundle. Homebrew's quarantine attribute remained present.
+
+Gatekeeper did not pass: `spctl --assess --type execute --verbose=4` reported
+`/Applications/Sweepdeck.app: rejected` with exit status 3. Launch Services did not
+return within 15 seconds and no Sweepdeck process appeared. The runner then removed
+the app with Homebrew uninstall. This was a release-shaped candidate ZIP from a
+temporary local file URL, not a public GitHub Release asset; the recorded checksum is
+not the hash for a published release. The versioned GitHub Release asset and public
+cask remain unpublished pending a Developer ID signing and notarization decision.
 
 App Store submission is not required by the cask format, and notarization is not a
 cask-format requirement. Homebrew's current macOS policy does require executable

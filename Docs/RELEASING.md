@@ -42,6 +42,17 @@ job from running. The public tap's pull-request workflow will repeat audit, styl
 install, uninstall and first-launch checks against the actual versioned GitHub Release
 URL on `macos-26` before a cask update can merge.
 
+The first disposable candidate check ran on 2026-10-21 in
+[Actions run 39569344355](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39569344355).
+Homebrew strict audit, style, install, installed-bundle inspection, and uninstall
+passed for the release-shaped 0.1.0 candidate. The check confirmed the ARM64 Mach-O
+executable, the expected app bundle and version, and a Homebrew quarantine attribute.
+`spctl --assess --type execute --verbose=4` rejected the app (exit status 3).
+Launch Services did not return within 15 seconds and no Sweepdeck process appeared.
+This run used the candidate ZIP through a temporary local tap; it did not publish a
+GitHub Release asset or a public cask. The cask and release remain blocked pending a
+decision on Developer ID signing and notarization.
+
 The cask belongs in the owner-managed public repository
 [`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap), at
 `Casks/sweepdeck.rb`. The primary command is
@@ -61,11 +72,11 @@ version and checksum while keeping its versioned release URL pattern, and open a
 PR is merged. No cross-repository Actions token is required for this manual process.
 
 Neither App Store submission nor notarization is required by the cask format. They
-remain Gatekeeper compatibility decisions: the current app build is ad-hoc signed and
-has not yet been tested through Homebrew quarantine on a disposable Apple Silicon Mac.
-Do not mark the release ready or publish the cask until the candidate test passes. If
-Gatekeeper blocks first launch, stop and ask whether to add Developer ID signing and
-notarization. Never remove quarantine or bypass macOS security controls.
+remain Gatekeeper compatibility decisions. The current app build is ad-hoc signed,
+and its first quarantined candidate was rejected by Gatekeeper on a disposable Apple
+Silicon runner. Do not mark the release ready or publish the cask until the signing
+decision is made and a new candidate passes the same checks. Never remove quarantine
+or bypass macOS security controls.
 
 At the 2026-10-21 eligibility check, the canonical Sweepdeck GitHub repository had 0
 stars, forks, and watchers and was one day old. Homebrew's normal thresholds are 30
