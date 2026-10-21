@@ -35,10 +35,14 @@ tap_name="miguel-osuna/tap"
 cask_name="$tap_name/sweepdeck"
 release_url='https://github.com/miguel-osuna/Sweepdeck/releases/download/v#{version}/Sweepdeck-#{version}-macOS.zip'
 
+stop_test_app() {
+  pkill -TERM -x Sweepdeck >/dev/null 2>&1 || true
+}
+
 finish() {
   result=$?
   set +e
-  osascript -e 'tell application "Sweepdeck" to quit' >/dev/null 2>&1
+  stop_test_app
   launchctl unsetenv SWEEPDECK_STATE_DIR >/dev/null 2>&1
   if brew list --cask --full-name 2>/dev/null | grep -Fxq "$cask_name"; then
     brew uninstall --cask "$cask_name"
@@ -132,7 +136,15 @@ if [[ "$gatekeeper_status" -ne 0 || "$open_status" -ne 0 || "$launch_status" -ne
   exit 1
 fi
 
-osascript -e 'tell application "Sweepdeck" to quit'
+pkill -TERM -x Sweepdeck
+for _ in {1..10}; do
+  pgrep -x Sweepdeck >/dev/null 2>&1 || break
+  sleep 1
+done
+if pgrep -x Sweepdeck >/dev/null 2>&1; then
+  echo "Sweepdeck did not stop after the first-launch check." >&2
+  exit 1
+fi
 brew uninstall --cask "$cask_name"
 [[ ! -e "$app_path" ]]
 echo "Homebrew candidate install, quarantine, first launch, and uninstall checks passed."
