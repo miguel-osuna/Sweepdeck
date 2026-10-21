@@ -2,7 +2,7 @@
 
 Recorded on 2026-10-20, macOS 26.6.2, arm64, Swift 6.2. The local host has
 Command Line Tools but no active full Xcode installation. The latest local run
-passed 42 Swift tests, measured 581/680 executable `SweepdeckCore` lines (85.4%)
+passed 43 Swift tests, measured 581/680 executable `SweepdeckCore` lines (85.4%)
 and built and verified the release bundle. GitHub Actions run
 [#70](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39506723318) passed
 the earlier 41-test suite, the 80% coverage floor and release build with Swift
@@ -11,7 +11,7 @@ checked on either CI runner.
 
 ## Automated checks
 
-- `bash scripts/swift.sh test --enable-code-coverage` passed locally: 42 Swift Testing tests in four suites. Coverage
+- `bash scripts/swift.sh test --enable-code-coverage` passed locally: 43 Swift Testing tests in four suites. Coverage
   includes scanning, cancellation and result limits; path/symlink/repository and
   metadata safety; overlapping-root deduplication; cleanup preview, stale-item
   refusal, fake Trash and partial results; full preference/history round-trip
@@ -116,9 +116,10 @@ under `/private/tmp/SweepdeckUIFixture`.
   trigger as switching the in-app setting from Dark to System. The root SwiftUI
   view now applies explicit Light and Dark choices to its `NSWindow`; System
   clears that window override and inherits the app's effective appearance. A
-  hosted-window SwiftUI regression test exercises Dark → System Light, follows
-  subsequent app appearance changes, and checks a forced Light selection. All
-  43 tests pass, SweepdeckCore coverage is 85.4%, and the release bundle builds.
+  hosted `NavigationSplitView` regression checks the sidebar and detail pane
+  together through Dark → System Light, verifies the AppKit window's effective
+  appearance, follows later system appearance changes, and checks forced Light.
+  All 43 tests pass, SweepdeckCore coverage is 85.4%, and the release bundle builds.
   The UI bridge returned `Sky Computer Use native pipe closed before response`
   when selecting the running app, so no screenshot comparison is available.
 
