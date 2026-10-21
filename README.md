@@ -40,24 +40,23 @@ and uses the bounded scan results.
 
 ## Download and Homebrew
 
-[Version 0.1.0 is available on GitHub Releases](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.1.0).
-That archive was published before the new app icon was added. The icon-bearing 0.2.0
-candidate passed the release verification and disposable Homebrew smoke checks in
-[run 39664467890](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890).
-It is waiting for the required release-environment approval. The cask remains
-unpublished until the versioned release asset is public and the tap pull request passes.
+[Version 0.2.0 is available on GitHub Releases](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.2.0).
+Its app-only archive includes the Sweepdeck app icon. SHA-256:
+`e31d64f80948461fe0f92d5c482c8f11c8f364ca81f8c326a40f8db8d2dbd760`.
 
-The planned one-command install is:
+The owner-managed Homebrew tap is maintained at
+[`miguel-osuna/homebrew-tap`](https://github.com/miguel-osuna/homebrew-tap). The
+Sweepdeck cask was published in [tap PR #2](https://github.com/miguel-osuna/homebrew-tap/pull/2).
+Install with:
 
 ```sh
 brew install --cask miguel-osuna/tap/sweepdeck
 ```
 
-This command is not available until the cask is published. Homebrew's [tap trust
-behavior](https://docs.brew.sh/Tap-Trust) trusts only the fully qualified cask above;
-it does not trust every formula and cask in the tap.
+Homebrew's [tap trust behavior](https://docs.brew.sh/Tap-Trust) trusts only the
+fully qualified cask above; it does not trust every formula and cask in the tap.
 
-After publication, installing by the short name requires these setup steps first:
+Installing by the short name requires these setup steps first:
 
 ```sh
 brew tap miguel-osuna/tap
@@ -65,26 +64,26 @@ brew trust --cask miguel-osuna/tap/sweepdeck
 brew install --cask sweepdeck
 ```
 
-The cask will install only `Sweepdeck.app` and have no `zap` stanza or cleanup
-scripts. Uninstall will leave Sweepdeck preferences and history in place.
+The cask installs only `Sweepdeck.app` and has no `zap` stanza or cleanup scripts.
+Uninstall leaves Sweepdeck preferences and history in place.
 
 ### Gatekeeper on first launch
 
 The free release is ad-hoc signed, without an Apple-issued Developer ID signature or
 notarization ticket. In the disposable macOS 26 check, Gatekeeper blocked the first
 open and said Apple could not verify Sweepdeck is free of malware. The dialog offered
-**Move to Trash** or **Done**. Homebrew preserves quarantine, and the cask will not
+**Move to Trash** or **Done**. Homebrew preserves quarantine, and the cask does not
 bypass Gatekeeper or automate an approval.
 
-The 0.2.0 candidate's [captured first-launch screen](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890)
+The 0.2.0 release's [captured first-launch screen](https://github.com/miguel-osuna/Sweepdeck/actions/runs/39664467890)
 shows the same warning. That check did not approve the app or verify a successful
 post-approval launch.
 
 If you decide to proceed, choose **Done**, then check **System Settings > Privacy &
 Security** for **Open Anyway** after the attempted launch. Read Apple's [security
 guidance](https://support.apple.com/en-au/102445) and continue only if you trust the
-app and its source. The disposable check did not approve the app or verify a successful
-post-approval launch. See [compatibility evidence](COMPATIBILITY.md) before installing.
+app and its source. The tap cask does not bypass Gatekeeper. See
+[compatibility evidence](COMPATIBILITY.md) before installing.
 
 ## Build from source
 
