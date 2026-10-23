@@ -3,6 +3,7 @@ import SweepdeckCore
 
 struct PreferencesView: View {
     @ObservedObject var model: AppModel
+    @ObservedObject var updates: UpdateManager
     @State private var rootsPageIndex = 0
     @State private var exclusionsPageIndex = 0
 
@@ -73,6 +74,38 @@ struct PreferencesView: View {
                         Text("Permanent deletion, automatic selection, external-volume scans and background indexing are unavailable by design in this MVP.").font(.caption).foregroundStyle(.secondary)
                     }.padding(10)
                 }
+                GroupBox("Software updates") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle("Check for updates automatically", isOn: Binding(
+                            get: { updates.automaticallyChecksForUpdates },
+                            set: { updates.setAutomaticChecksEnabled($0) }
+                        ))
+                        Toggle("Download and install updates automatically", isOn: Binding(
+                            get: { updates.automaticallyDownloadsUpdates },
+                            set: { updates.setAutomaticDownloadsEnabled($0) }
+                        ))
+                        .disabled(!updates.allowsAutomaticUpdates || !updates.automaticallyChecksForUpdates || model.isBusy)
+                        if !updates.allowsAutomaticUpdates {
+                            Text("Automatic installation is unavailable in this build until the quarantined update path passes Gatekeeper validation. Sweepdeck will ask before installing updates.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text("Update checks contact Sweepdeck's signed release feed. No system profile is sent. Automatic checks are opt-in. Sweepdeck waits for active work to finish before relaunching after an update.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        HStack {
+                            Button("Check for Updates…") { updates.checkForUpdates() }
+                                .disabled(model.isPresentingPanel || !updates.canCheckForUpdates)
+                            Link("Download manually", destination: URL(string: "https://github.com/miguel-osuna/Sweepdeck/releases/latest")!)
+                            Spacer()
+                            if updates.automaticallyChecksForUpdates {
+                                Label("Automatic checks are on", systemImage: "checkmark.circle")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            } else {
+                                Label("Automatic checks are off", systemImage: "pause.circle")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
+                }
                 GroupBox("Operation history") {
                     VStack(alignment: .leading, spacing: 12) {
                         if model.history.isEmpty { Text("No cleanup operations yet.").foregroundStyle(.secondary) }
@@ -89,8 +122,8 @@ struct PreferencesView: View {
                 }
                 HStack {
                     VStack(alignment: .leading) {
-                        Text("Sweepdeck \(ReleaseMetadata.shortVersion(from: Bundle.main.infoDictionary)) (\(ReleaseMetadata.buildNumber(from: Bundle.main.infoDictionary)))").font(.headline)
-                        Text("Original MIT-licensed code · Apple frameworks · no telemetry").font(.caption).foregroundStyle(.secondary)
+                        Text(ReleaseMetadata.footerLabel(from: Bundle.main.infoDictionary)).font(.headline)
+                        Text("Original MIT-licensed code · Sparkle updates · no telemetry").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button("Export Diagnostics…") { model.exportDiagnostics() }

@@ -17,4 +17,13 @@ public enum ReleaseMetadata {
         }
         return value
     }
+
+    public static func footerLabel(from infoDictionary: [String: Any]?) -> String {
+        let version = shortVersion(from: infoDictionary)
+        let build = buildNumber(from: infoDictionary)
+        if version == build {
+            return "Sweepdeck \(version)"
+        }
+        return "Sweepdeck \(version) (build \(build))"
+    }
 }

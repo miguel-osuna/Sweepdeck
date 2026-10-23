@@ -15,10 +15,12 @@ if [[ -n "${SWEEPDECK_VERSION:-}" && -z "${SWEEPDECK_ARCHIVE_PATH:-}" ]]; then
   archive="$PWD/dist/Sweepdeck-${SWEEPDECK_VERSION}-macOS.zip"
 fi
 rm -rf "$bundle"
-mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources" "$PWD/dist" "$(dirname "$archive")"
+mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources" "$bundle/Contents/Frameworks" "$PWD/dist" "$(dirname "$archive")"
 cp "$binary_dir/Sweepdeck" "$bundle/Contents/MacOS/Sweepdeck"
 cp Resources/Info.plist "$bundle/Contents/Info.plist"
 cp Resources/Sweepdeck.icns "$bundle/Contents/Resources/Sweepdeck.icns"
+cp .build/dependencies/sparkle/LICENSE "$bundle/Contents/Resources/Sparkle-LICENSE.txt"
+ditto .build/dependencies/sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework "$bundle/Contents/Frameworks/Sparkle.framework"
 if [[ -n "${SWEEPDECK_VERSION:-}" ]]; then
   bash scripts/set-app-version.sh "$bundle/Contents/Info.plist" "$SWEEPDECK_VERSION"
 fi
@@ -33,8 +35,10 @@ codesign --verify --strict "$bundle"
 ditto -c -k --keepParent --norsrc --noextattr --noqtn "$bundle" "$archive.tmp"
 mv -f "$archive.tmp" "$archive"
 (cd "$(dirname "$archive")" && shasum -a 256 "$(basename "$archive")" > "$(basename "$archive").sha256")
-rm -rf "$PWD/dist/Sweepdeck.app"
-ln -s "$bundle" "$PWD/dist/Sweepdeck.app"
-codesign --verify --strict "$PWD/dist/Sweepdeck.app"
+if [[ "${SWEEPDECK_SKIP_DIST_ALIAS:-0}" != 1 ]]; then
+  rm -rf "$PWD/dist/Sweepdeck.app"
+  ln -s "$bundle" "$PWD/dist/Sweepdeck.app"
+  codesign --verify --strict "$PWD/dist/Sweepdeck.app"
+fi
 echo "Built and verified $archive"
 cat "$archive.sha256"

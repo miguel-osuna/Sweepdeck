@@ -162,13 +162,77 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
+  sparkle_candidate:
+    needs: [candidate]
+    if: needs.candidate.outputs.release_version != ''
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download the exact release candidate
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: Sweepdeck-release-candidate-${{ needs.candidate.outputs.release_version }}
+          path: dist
+      - name: Extract and verify the candidate update bundle
+        env:
+          RELEASE_VERSION: ${{ needs.candidate.outputs.release_version }}
+        run: |
+          set -euo pipefail
+          candidate_dir="$RUNNER_TEMP/Sweepdeck-update-candidate"
+          mkdir -p "$candidate_dir"
+          ditto -x -k "dist/Sweepdeck-${RELEASE_VERSION}-macOS.zip" "$candidate_dir"
+          candidate_app="$candidate_dir/Sweepdeck.app"
+          candidate_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$candidate_app/Contents/Info.plist")"
+          [[ "$candidate_version" == "$RELEASE_VERSION" ]] || {
+            echo "Candidate bundle version $candidate_version does not match $RELEASE_VERSION." >&2
+            exit 1
+          }
+          printf 'SWEEPDECK_TEST_UPDATE_APP=%s\n' "$candidate_app" >> "$GITHUB_ENV"
+          printf 'SWEEPDECK_TEST_UPDATE_VERSION=%s\n' "$RELEASE_VERSION" >> "$GITHUB_ENV"
+      - name: Select installed Swift 6.2 Xcode
+        shell: bash
+        run: |
+          for app in /Applications/Xcode*.app; do
+            export DEVELOPER_DIR="$app/Contents/Developer"
+            if xcrun swift --version | grep -q 'Swift version 6.2'; then
+              echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
+          exit 1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Prepare pinned Sparkle tools
+        run: bash scripts/prepare-sparkle.sh
+      - name: Create an ephemeral localhost test signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          private_key="$(openssl rand -base64 32 | tr -d '\n')"
+          echo "::add-mask::$private_key"
+          public_key="$(SPARKLE_EDDSA_PRIVATE_KEY="$private_key" node scripts/verify-sparkle-key.mjs --print-public)"
+          {
+            printf 'SPARKLE_EDDSA_PRIVATE_KEY=%s\n' "$private_key"
+            printf 'SPARKLE_EDDSA_PUBLIC_KEY=%s\n' "$public_key"
+          } >> "$GITHUB_ENV"
+          unset private_key public_key
+      - name: Verify install-on-quit for the exact candidate through localhost Sparkle feed
+        run: bash scripts/test-local-updates.sh automatic
+
   publish:
-    needs: [candidate, homebrew_candidate]
+    needs: [candidate, homebrew_candidate, sparkle_candidate]
     if: needs.candidate.outputs.release_version != ''
     runs-on: macos-15
     environment: release
     permissions:
       contents: write
+    outputs:
+      appcast_sha256: ${{ steps.signed_appcast.outputs.sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -183,6 +247,61 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Prepare pinned Sparkle release tools
+        run: bash scripts/prepare-sparkle.sh
+      - name: Verify the release signing key matches the embedded public key
+        env:
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          SPARKLE_EDDSA_PUBLIC_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' Resources/Info.plist)" \
+            node scripts/verify-sparkle-key.mjs
+      - name: Generate and verify the signed Sparkle appcast before publishing
+        id: signed_appcast
+        env:
+          RELEASE_VERSION: ${{ needs.candidate.outputs.release_version }}
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          updates_dir="$RUNNER_TEMP/Sweepdeck-updates"
+          mkdir -p "$updates_dir"
+          cp "dist/Sweepdeck-${RELEASE_VERSION}-macOS.zip" "$updates_dir/"
+          printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" | \
+            .build/dependencies/sparkle/bin/generate_appcast \
+              --ed-key-file - \
+              --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/v${RELEASE_VERSION}/" \
+              --full-release-notes-url "https://github.com/${GITHUB_REPOSITORY}/releases/tag/v${RELEASE_VERSION}" \
+              "$updates_dir"
+          printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" | \
+            .build/dependencies/sparkle/bin/sign_update \
+              --ed-key-file - --verify "$updates_dir/appcast.xml"
+          archive_signature="$(python3 - "$updates_dir/appcast.xml" "$RELEASE_VERSION" "$GITHUB_REPOSITORY" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          feed_path, version, repository = sys.argv[1:]
+          root = ET.parse(feed_path).getroot()
+          enclosure = root.find("./channel/item/enclosure")
+          if enclosure is None:
+              raise SystemExit("The signed appcast has no update archive enclosure.")
+          expected_name = f"Sweepdeck-{version}-macOS.zip"
+          if not enclosure.attrib.get("url", "").endswith(expected_name):
+              raise SystemExit("The appcast does not point to the tested release archive.")
+          sparkle = "http://www.andymatuschak.org/xml-namespaces/sparkle"
+          release_notes = root.find(f"./channel/item/{{{sparkle}}}fullReleaseNotesLink")
+          expected_notes = f"https://github.com/{repository}/releases/tag/v{version}"
+          if release_notes is None or release_notes.text != expected_notes:
+              raise SystemExit("The appcast does not link to the matching GitHub release notes.")
+          signature = enclosure.attrib.get("{http://www.andymatuschak.org/xml-namespaces/sparkle}edSignature")
+          if not signature:
+              raise SystemExit("The release archive has no Sparkle EdDSA signature.")
+          print(signature)
+          PY
+          )"
+          printf '%s' "$SPARKLE_EDDSA_PRIVATE_KEY" | \
+            .build/dependencies/sparkle/bin/sign_update \
+              --ed-key-file - --verify "$updates_dir/Sweepdeck-${RELEASE_VERSION}-macOS.zip" "$archive_signature"
+          printf 'sha256=%s\n' "$(shasum -a 256 "$updates_dir/appcast.xml" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
       - name: Publish the reviewed version and release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -215,3 +334,76 @@ jobs:
               exit 1
             }
           done
+      - name: Stage the signed appcast for GitHub Pages
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/Sweepdeck-pages"
+          cp "$RUNNER_TEMP/Sweepdeck-updates/appcast.xml" "$RUNNER_TEMP/Sweepdeck-pages/appcast.xml"
+      - name: Upload the signed appcast Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v5.0.0
+        with:
+          path: ${{ runner.temp }}/Sweepdeck-pages
+
+  deploy_appcast:
+    needs: [candidate, publish]
+    if: needs.candidate.outputs.release_version != '' && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the signed Sparkle appcast
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v5.0.1
+      - name: Verify the public appcast matches the signed artifact
+        env:
+          EXPECTED_SHA256: ${{ needs.publish.outputs.appcast_sha256 }}
+        run: |
+          set -euo pipefail
+          for attempt in {1..12}; do
+            if curl --fail --location --silent \
+              https://miguel-osuna.github.io/Sweepdeck/appcast.xml \
+              --output "$RUNNER_TEMP/published-appcast.xml"; then
+              actual_sha256="$(sha256sum "$RUNNER_TEMP/published-appcast.xml" | awk '{print $1}')"
+              [[ "$actual_sha256" == "$EXPECTED_SHA256" ]] && exit 0
+            fi
+            sleep 5
+          done
+          echo "The published Pages appcast did not match the signed artifact after retries." >&2
+          exit 1
+
+  published_sparkle_smoke:
+    needs: [candidate, deploy_appcast]
+    if: needs.candidate.outputs.release_version != '' && needs.deploy_appcast.result == 'success'
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Select installed Swift 6.2 Xcode
+        shell: bash
+        run: |
+          for app in /Applications/Xcode*.app; do
+            export DEVELOPER_DIR="$app/Contents/Developer"
+            if xcrun swift --version | grep -q 'Swift version 6.2'; then
+              echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
+          exit 1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Prepare pinned Sparkle tools
+        run: bash scripts/prepare-sparkle.sh
+      - name: Install from the published HTTPS appcast on a disposable runner
+        env:
+          SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' }}
+          SWEEPDECK_TEST_UPDATE_VERSION: ${{ needs.candidate.outputs.release_version }}
+          SWEEPDECK_TEST_FEED_URL: https://miguel-osuna.github.io/Sweepdeck/appcast.xml
+        run: bash scripts/test-local-updates.sh published

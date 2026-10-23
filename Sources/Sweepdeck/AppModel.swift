@@ -3,6 +3,7 @@ import AppKit
 import Combine
 import UniformTypeIdentifiers
 import SweepdeckCore
+import SweepdeckPresentation
 
 enum SectionID: String, CaseIterable, Identifiable {
     case dashboard = "Dashboard", cleanup = "Smart Cleanup", explorer = "Disk Explorer", health = "System Health", settings = "Settings"
@@ -14,18 +15,6 @@ enum SectionID: String, CaseIterable, Identifiable {
         case .explorer: "internaldrive"
         case .health: "waveform.path.ecg"
         case .settings: "slider.horizontal.3"
-        }
-    }
-}
-
-enum BusyOperation: Sendable {
-    case scanning, validating, cleanup
-
-    var title: String {
-        switch self {
-        case .scanning: "Scanning authorized folders"
-        case .validating: "Validating selection"
-        case .cleanup: "Moving confirmed files to Trash"
         }
     }
 }
@@ -62,6 +51,7 @@ final class AppModel: ObservableObject {
     @Published var selection = Selection()
     @Published var progress = ScanProgress()
     @Published var busyOperation: BusyOperation?
+    @Published private(set) var updateSessionInProgress = false
     @Published private(set) var cleanupProgress = CleanupProgress()
     @Published var disk: DiskSnapshot?
     @Published var diskError: String?
@@ -88,6 +78,8 @@ final class AppModel: ObservableObject {
             store = JSONStore(url: directory.appendingPathComponent("state.json"))
         } else if let directory = ProcessInfo.processInfo.environment["SWEEPDECK_STATE_DIR"] {
             store = JSONStore(url: URL(fileURLWithPath: directory).appendingPathComponent("state.json"))
+        } else if let directory = Bundle.main.object(forInfoDictionaryKey: "SweepdeckStateDirectory") as? String {
+            store = JSONStore(url: URL(fileURLWithPath: directory).appendingPathComponent("state.json"))
         } else { store = .application }
         do { state = try store.load() }
         catch { state = SavedState(); persistenceError = "Preferences could not be loaded. Cleanup and saving are disabled to preserve your existing file. \(error.localizedDescription)" }
@@ -96,7 +88,10 @@ final class AppModel: ObservableObject {
         refreshDisk()
     }
     @Published private(set) var isTerminating=false
-    var isBusy: Bool { busyOperation != nil || isTerminating || isPresentingPanel }
+    var isBusy: Bool { busyOperation != nil || updateSessionInProgress || isTerminating || isPresentingPanel }
+    func setUpdateSessionInProgress(_ active: Bool) {
+        updateSessionInProgress = active
+    }
     private var panelWindow: NSWindow? {
         NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first(where: { $0.isVisible })
     }
@@ -169,9 +164,13 @@ final class AppModel: ObservableObject {
     func cancel() { task?.cancel() }
     func prepareForTermination() async {
         isTerminating=true
+        plan = nil
         let pending=task
         pending?.cancel()
         await pending?.value
+    }
+    func discardPendingPreviewForTermination() {
+        plan = nil
     }
     func preview() {
         guard !isBusy, !selected.isEmpty, persistenceError == nil else { return }

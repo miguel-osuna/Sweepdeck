@@ -3,12 +3,14 @@ import PackageDescription
 
 let packageRoot = String(#filePath.dropLast("Package.swift".count))
 let rustLibraryDirectory = "\(packageRoot).build/rust/release"
+let sparkleFrameworkPath = ".build/dependencies/sparkle/Sparkle.xcframework"
 
 let package = Package(
     name: "Sweepdeck",
     platforms: [.macOS("15.0")],
     products: [.executable(name: "Sweepdeck", targets: ["Sweepdeck"])],
     targets: [
+        .binaryTarget(name: "Sparkle", path: sparkleFrameworkPath),
         .systemLibrary(name: "SweepdeckRust", path: "Sources/SweepdeckRust"),
         .target(
             name: "SweepdeckCore",
@@ -20,7 +22,16 @@ let package = Package(
         ),
         .target(name: "SweepdeckAppearance", dependencies: ["SweepdeckCore"]),
         .target(name: "SweepdeckPresentation"),
-        .executableTarget(name: "Sweepdeck", dependencies: ["SweepdeckCore", "SweepdeckAppearance", "SweepdeckPresentation"]),
+        .executableTarget(
+            name: "Sweepdeck",
+            dependencies: [
+                "SweepdeckCore",
+                "SweepdeckAppearance",
+                "SweepdeckPresentation",
+                "Sparkle"
+            ],
+            linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
+        ),
         .testTarget(name: "SweepdeckCoreTests", dependencies: ["SweepdeckCore"]),
         .testTarget(name: "SweepdeckAppearanceTests", dependencies: ["SweepdeckAppearance", "SweepdeckCore"]),
         .testTarget(name: "SweepdeckPresentationTests", dependencies: ["SweepdeckPresentation"])

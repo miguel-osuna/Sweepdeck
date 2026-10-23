@@ -40,6 +40,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test release version metadata
         run: bash scripts/test-app-version.sh
+      - name: Test Sparkle updater defaults
+        run: bash scripts/test-updater-config.sh
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
       - name: Test Swift build cache relocation
@@ -81,6 +83,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test release version metadata
         run: bash scripts/test-app-version.sh
+      - name: Test Sparkle updater defaults
+        run: bash scripts/test-updater-config.sh
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
       - name: Test Swift build cache relocation
@@ -121,6 +125,8 @@ jobs:
         run: sw_vers && xcodebuild -version && swift --version
       - name: Test release version metadata
         run: bash scripts/test-app-version.sh
+      - name: Test Sparkle updater defaults
+        run: bash scripts/test-updater-config.sh
       - name: Test coverage gate
         run: python3 scripts/test-core-coverage.py
       - name: Test Swift build cache relocation

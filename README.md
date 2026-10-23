@@ -11,7 +11,12 @@
 
 Sweepdeck is a free, native macOS utility for inspecting local storage and reviewing
 individual files before moving them to Trash. No accounts, subscriptions, telemetry,
-network services, or background indexing.
+or background indexing. The built-in updater is configured for the first Sparkle-enabled
+release, using a signed GitHub Pages feed and the versioned GitHub Release ZIP. Existing
+0.3.0 and earlier installations will need to install that release manually once.
+Automatic checks require opt-in. Automatic installation is disabled until the
+quarantined update path passes Gatekeeper; while it is disabled, each installation
+requires user approval. Sweepdeck sends no system profile.
 
 ## What it does
 
@@ -46,6 +51,9 @@ published SHA-256 sidecar. The independently verified SHA-256 values are:
 
 - ZIP: `ba4c944c4a128a508465b0c7659c60359220c1585da7f6c0f89c4072141ccf6e`
 - DMG: `62e81604c21fe34be3900a1753a9ee6cfb55591edfb0fba70eb486f5d41853c4`
+
+Version 0.3.0 does not include the updater. Install the first updater-enabled release
+manually; later versions can be installed in place through Sweepdeck.
 
 The [DMG download](https://github.com/miguel-osuna/Sweepdeck/releases/download/v0.3.0/Sweepdeck-0.3.0-macOS.dmg)
 contains the same app, an Applications shortcut, and `INSTALL.txt` for drag-to-Applications
@@ -113,8 +121,9 @@ release.
 Requires Apple Silicon, macOS 15+, Swift 6.2, the macOS SDK, and Rust 1.99.1. Xcode
 or matching Command Line Tools are sufficient. Install Rust with `rustup`; the checked-in
 `rust-toolchain.toml` selects the compiler plus `clippy` and `rustfmt`. The first Rust
-use can download these components. Sweepdeck has no third-party Swift Package Manager
-or Cargo crate dependencies; Rust builds the local accelerator.
+use can download these components. Sparkle 2.10.0 is fetched as a checksum-pinned
+official binary framework by `scripts/prepare-sparkle.sh`; Sweepdeck has no third-party
+Cargo crate dependencies.
 
 ```sh
 bash scripts/swift.sh test
@@ -142,7 +151,8 @@ immediately free disk space.
 Preferences and history live in
 `~/Library/Application Support/Sweepdeck/state.json`. History can contain file paths
 and retains at most 50 operations / 1,000 item results. Diagnostics export contains
-counts and OS/app versions, not paths or file contents. No data is sent anywhere.
+counts and OS/app versions, not paths or file contents. If you enable update checks,
+Sweepdeck contacts the public GitHub release feed. It sends no system profile.
 
 For isolated GUI validation, pass
 `--sweepdeck-state-directory <temporary-directory>` to the app at launch. This

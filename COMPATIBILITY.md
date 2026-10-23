@@ -24,6 +24,61 @@ build, and disposable Homebrew smoke in [release run 39664467890](https://github
 The protected release job was approved by its required reviewer and completed
 successfully.
 
+The Sparkle updater changes in the current working tree built and passed the complete
+Swift test matrix with Swift 6.2 and Sparkle 2.10.0 on macOS 26.6.2 arm64. Isolated
+automatic 0.3.0-to-0.4.0 updates passed with both the existing production Keychain key
+and a per-test ephemeral key. Sparkle installed on quit; the harness relaunched 0.4.0
+and verified the launch marker, preserved appearance/history/state, signature, and
+unchanged installed `/Applications/Sweepdeck.app`. The locally built 0.4.0 candidate
+path also passed using a fresh ephemeral key. Automatic installation was enabled only
+in temporary test bundles. The updated app's dashboard visibly reports `Version 0.4.0`,
+and the user confirmed that the post-update Settings footer reports `0.4.0`. The manual
+visual before/after preferences and history comparison remains unverified; the automated
+state-file checks passed. Three earlier local attempts fetched the localhost appcast
+without requesting the archive and timed out before installation; the UI bridge closed
+during those attempts. A fresh run under the unique display name
+`Sweepdeck Update Test DZc3Pp` also fetched the appcast but did not begin installation
+before timing out at 0.3.0; the native UI bridge again failed to attach. The process
+lookup now requests full-width `ps` output. The
+historical CI rows above do not cover these updater changes; the updated CI and release
+workflow paths have not yet run on GitHub. GitHub Pages is configured, but the workflow
+has not deployed an appcast, so the new post-deploy smoke against the public feed and
+GitHub Release ZIP is configured but cannot run until the first Sparkle-enabled release.
+
+The release workflow now includes a disposable macOS gate for the exact candidate ZIP:
+it signs a localhost feed with a per-run ephemeral key, verifies Sparkle installs the
+candidate on quit, then launches the updated bundle and checks state preservation
+before the protected publish job. This workflow change has not yet run on GitHub and
+does not test quarantine or Gatekeeper.
+
+The relaunch-deferral unit tests passed for active scan/preview/Trash states. A live
+localhost deferral run then used only the harness-generated empty-directory fixture. The
+update prompt offered 0.4.0 with automatic installation unchecked. I requested download
+and relaunch while the UI reported an active scan; Sparkle stayed at “Ready to Install”
+until the scan result was saved, then relaunched the test app at 0.4.0. The saved test
+state retained its seeded Dark appearance and history entry, gained the completed scan
+timestamp, and recorded both 0.3.0 and 0.4.0 launches. The updated bundle passed strict
+code-signature verification. No files were selected or moved to Trash. Offline-feed and
+tampered-archive signatures are rejected by the test tooling, but the corresponding
+visible Sparkle UI failure dialogs remain unverified.
+
+The localhost runs did not simulate a quarantined download or verify Gatekeeper behavior.
+The current release remains ad-hoc signed and unnotarized, so the production bundle now
+sets `SUAllowsAutomaticUpdates=false`. The Settings control is visible but disabled;
+isolated test bundles explicitly override that value to exercise automatic installation.
+Run a quarantined update test on a disposable macOS runner before allowing the control.
+The release workflow run currently visible on GitHub predates these updater changes, and
+the public appcast URL returns HTTP 404 until a Sparkle-enabled release publishes it. The
+Homebrew tap remains at 0.3.0 with no `auto_updates` declaration. The signing key is in
+the protected GitHub release environment and remains in the local Keychain. A local
+plaintext recovery export with owner-only permissions was generated for the user to save
+in their vault; vault storage is not yet confirmed, so an encrypted offline backup remains
+an open release-readiness task. Sparkle recommends
+Developer ID signing and notarization where possible
+([Sparkle security guidance](https://sparkle-project.org/documentation/)). Apple explains
+how notarization tickets inform Gatekeeper on first launch
+([Apple notarization guidance](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)).
+
 ## Homebrew and Gatekeeper evidence
 
 The [0.1.0 GitHub Release](https://github.com/miguel-osuna/Sweepdeck/releases/tag/v0.1.0)
