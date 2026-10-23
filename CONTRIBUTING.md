@@ -4,8 +4,9 @@ Use Swift 6.2+ and macOS SDK 26.0 or a compatible toolchain. Open Package.swift 
 Xcode if desired; full Xcode is optional for the command-line workflow.
 
 Run `bash scripts/swift.sh test` and `bash scripts/build-app.sh`. Keep concurrency
-warnings and compiler diagnostics visible. The Swift package has no third-party
-dependencies; release tooling uses exact-pinned npm development dependencies.
+warnings and compiler diagnostics visible. Sparkle 2.10.0 is the sole third-party
+runtime dependency and is fetched from its official binary release with a pinned
+checksum. Release tooling uses exact-pinned npm development dependencies.
 
 Use unique temporary fixture directories. Test discovery, protection, root identity,
 symlink ancestors, stale metadata, exclusions, selection, cancellation, partial

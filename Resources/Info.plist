@@ -7,10 +7,18 @@
 <key>CFBundleExecutable</key><string>Sweepdeck</string>
 <key>CFBundleIconFile</key><string>Sweepdeck.icns</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.0.0</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleShortVersionString</key><string>0.3.0</string>
+<key>CFBundleVersion</key><string>0.3.0</string>
 <key>LSMinimumSystemVersion</key><string>15.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
+<key>SUFeedURL</key><string>https://miguel-osuna.github.io/Sweepdeck/appcast.xml</string>
+<key>SUPublicEDKey</key><string>0Qm9EttnzanTlTUzHHkr9P30npDDAIVCvS1jOTnOswM=</string>
+<key>SUAutomaticallyUpdate</key><false/>
+<key>SUAllowsAutomaticUpdates</key><false/>
+<key>SUEnableSystemProfiling</key><false/>
+<key>SUVerifyUpdateBeforeExtraction</key><true/>
+<key>SURequireSignedFeed</key><true/>
+<key>SUSignedFeedFailureExpirationInterval</key><integer>0</integer>
 <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Sweepdeck contributors. MIT License.</string>
 </dict></plist>

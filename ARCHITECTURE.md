@@ -11,10 +11,16 @@ into a standard app bundle and signs it ad hoc for local use.
 `ScanReport → Selection → CleanupExecutor.preview → immutable CleanupPlan → explicit
 UI confirmation → CleanupExecutor.execute → per-item OperationRecord → JSONStore`
 
-`AppModel` owns presentation state on the main actor. Scanner/executor actors perform
+`AppModel` owns presentation state on the main actor. `UpdateManager` wraps Sparkle's
+standard updater and exposes opt-in update checks. A check may run during a scan; the
+updater prevents new cleanup work while it downloads. Sparkle verifies the EdDSA-signed
+feed and archive before extraction. Its relaunch hook waits for a scan, preview, Trash
+operation, or folder panel to finish. Automatic installation is available as an opt-in
+setting and starts off; users are advised to keep it off until a quarantined candidate
+passes Gatekeeper testing. Scanner/executor actors perform
 filesystem work away from the main actor. Progress crosses through sendable values.
-One UI operation is active at a time. Settings changes invalidate results. Root and
-policy snapshots are immutable during operations; the UI disables relevant edits.
+One cleanup operation is active at a time. Settings changes invalidate results. Root
+and policy snapshots are immutable during operations; the UI disables relevant edits.
 
 ## Core boundaries
 
@@ -53,5 +59,6 @@ health task is tied to its view and scene activity and samples every three secon
 Memory used is explicitly an active+wired+compressed estimate. Exact pressure and
 per-process views are delegated to Activity Monitor; no guessed score.
 
-No third-party source was copied. Apple API references and inspiration are tracked
-in Docs/REFERENCES.md. Advanced integrations are future modules, not hidden buttons.
+Sparkle 2.10.0 is included as a checksum-pinned binary framework; it is the app's only
+third-party runtime dependency. Apple API references and inspiration are tracked in
+Docs/REFERENCES.md. Advanced integrations are future modules, not hidden buttons.

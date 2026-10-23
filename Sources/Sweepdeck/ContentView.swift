@@ -1,9 +1,11 @@
 import SwiftUI
 import SweepdeckCore
 import SweepdeckAppearance
+import SweepdeckPresentation
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
+    @ObservedObject var updates: UpdateManager
 
     var body: some View {
         NavigationSplitView {
@@ -59,7 +61,7 @@ struct ContentView: View {
                     case .cleanup: CleanupView(model: model)
                     case .explorer: ExplorerView(model: model)
                     case .health: HealthView(model: model)
-                    case .settings: PreferencesView(model: model)
+                    case .settings: PreferencesView(model: model, updates: updates)
                     }
                 }
             }

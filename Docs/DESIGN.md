@@ -5,6 +5,8 @@ Build a free, local, native Mac utility for explicitly authorized folder scans,
 individual candidate review, and confirmed Finder-style Trash operations.
 Never run cleanup against personal data during development. Original code only.
 No backend, telemetry, privileged helper, auto indexing, or permanent deletion.
+The public GitHub release feed is used only for opt-in update checks; no system
+profile is sent.
 
 ## Environment and approach
 Observed: Apple Silicon, macOS 26.6.2, Swift 6.2, SDK 26.0, Command Line Tools,

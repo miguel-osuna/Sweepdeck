@@ -45,6 +45,10 @@ fi
 command_name="${1:-build}"
 if [[ $# -gt 0 ]]; then shift; fi
 
+if [[ "$command_name" == "build" || "$command_name" == "test" || "$command_name" == "package" ]]; then
+    bash scripts/prepare-sparkle.sh
+fi
+
 if [[ "$command_name" == "test" || "$command_name" == "build" ]]; then
     toolchain_bin="$PWD/.build/rustup/toolchains/1.99.1-aarch64-apple-darwin/bin"
     local_rust_toolchain=false
