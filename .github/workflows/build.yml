@@ -76,6 +76,52 @@ jobs:
           path: dist/Sweepdeck-macOS.zip
           if-no-files-found: error
 
+  sparkle_local_update:
+    name: Sparkle localhost update on a disposable runner
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Require a disposable Apple Silicon runner
+        env:
+          SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' && runner.arch == 'ARM64' }}
+        run: |
+          [[ "${GITHUB_ACTIONS:-}" == true && "$SWEEPDECK_DISPOSABLE_RUNNER" == true ]] || {
+            echo "The localhost update test must run on a disposable GitHub-hosted Apple Silicon runner." >&2
+            exit 1
+          }
+      - name: Select installed Swift 6.2 Xcode
+        shell: bash
+        run: |
+          for app in /Applications/Xcode*.app; do
+            export DEVELOPER_DIR="$app/Contents/Developer"
+            if xcrun swift --version | grep -q 'Swift version 6.2'; then
+              echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Swift 6.2 Xcode is installed on this runner.' >&2
+          exit 1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Prepare pinned Sparkle tools
+        run: bash scripts/prepare-sparkle.sh
+      - name: Create an ephemeral localhost test signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          private_key="$(openssl rand -base64 32 | tr -d '\n')"
+          echo "::add-mask::$private_key"
+          public_key="$(SPARKLE_EDDSA_PRIVATE_KEY="$private_key" node scripts/verify-sparkle-key.mjs --print-public)"
+          {
+            printf 'SPARKLE_EDDSA_PRIVATE_KEY=%s\n' "$private_key"
+            printf 'SPARKLE_EDDSA_PUBLIC_KEY=%s\n' "$public_key"
+          } >> "$GITHUB_ENV"
+          unset private_key public_key
+      - name: Verify an isolated signed install-on-quit update
+        run: bash scripts/test-local-updates.sh automatic
+
   latest-swift:
     name: Latest stable Swift 6.4.1 on macOS 26
     runs-on: macos-26
