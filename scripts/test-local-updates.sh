@@ -223,7 +223,6 @@ automatic = sys.argv[5] in {"automatic", "published"}
 info["SUEnableAutomaticChecks"] = automatic
 info["SUAutomaticallyUpdate"] = automatic
 info["SUAllowsAutomaticUpdates"] = True
-info["SweepdeckTestTriggerBackgroundUpdateCheck"] = automatic
 info["SUEnableSystemProfiling"] = False
 info["SUVerifyUpdateBeforeExtraction"] = True
 info["SURequireSignedFeed"] = True

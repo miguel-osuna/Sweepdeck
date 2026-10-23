@@ -34,7 +34,7 @@ final class UpdateManager: ObservableObject {
         guard !started else { return }
         started = true
         controller.startUpdater()
-        if Bundle.main.object(forInfoDictionaryKey: "SweepdeckTestTriggerBackgroundUpdateCheck") as? Bool == true {
+        if controller.updater.automaticallyChecksForUpdates {
             controller.updater.checkForUpdatesInBackground()
         }
         scheduleSettingsRefresh()
