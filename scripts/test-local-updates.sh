@@ -223,6 +223,7 @@ automatic = sys.argv[5] in {"automatic", "published"}
 info["SUEnableAutomaticChecks"] = automatic
 info["SUAutomaticallyUpdate"] = automatic
 info["SUAllowsAutomaticUpdates"] = True
+info["SweepdeckTestTriggerBackgroundUpdateCheck"] = automatic
 info["SUEnableSystemProfiling"] = False
 info["SUVerifyUpdateBeforeExtraction"] = True
 info["SURequireSignedFeed"] = True
@@ -497,6 +498,20 @@ for _ in {1..300}; do
 done
 
 if [[ "$updated" != true ]]; then
+  echo "Final app version: ${current_version:-unknown}"
+  echo "Final app processes: ${current_pids:-none}"
+  if [[ -f "$launch_marker" ]]; then
+    echo "Launch markers:"
+    cat "$launch_marker"
+  else
+    echo "No app launch markers were recorded."
+  fi
+  if [[ -f "$workspace/http.log" ]]; then
+    echo "Loopback feed requests:"
+    cat "$workspace/http.log"
+  fi
+  echo "Recent app log:"
+  log show --last 10m --style compact --predicate 'process == "Sweepdeck"' 2>/dev/null | tail -n 80 || true
   echo "Timed out waiting for the app bundle to update and launch. It remains at $old_app for inspection." >&2
   exit 1
 fi
