@@ -77,6 +77,11 @@ feed/archive handling and Sparkle's install-on-quit path, then launches the upda
 temporary app to check its version and preserved state. It does not test a quarantined
 download or establish Gatekeeper compatibility.
 
+Pull-request CI also runs the isolated localhost install-on-quit path on a disposable
+Apple Silicon macOS runner using a per-run EdDSA key. This catches updater regressions
+before merge; it does not replace the release workflow's check of the exact versioned
+candidate or the separate quarantine and Gatekeeper validation.
+
 After deploying the appcast, a second disposable macOS job tests the actual public HTTPS
 feed and GitHub Release ZIP. It installs the published update over an isolated older app,
 then checks the new version, code signature, and preserved preferences/history. This
