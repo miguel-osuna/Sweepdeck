@@ -56,19 +56,25 @@ and will start off.
    “Ready to Install” after installation was requested during an active scan, then
    relaunched after the scan result was saved. The updated bundle signature, 0.4.0
    launch marker, seeded preferences/history, and completed scan state were verified.
-   Offline-feed and tampered-update signature rejection passed in the test tooling, but
-   their visible Sparkle UI failures remain unverified. The Settings controls still need
-   a focused visual check. Production automatic installation remains disabled until the
-   quarantine gate passes; isolated tests explicitly enable it only in their temporary
-   app bundles.
+   The offline-feed UI showed Sparkle's retrieval-error dialog; the harness confirmed the
+   app stayed on 0.3.0. The tampered-feed UI offered 0.4.0, then rejected its modified
+   archive as improperly signed; the harness confirmed the app stayed on 0.3.0. Both
+   visible failure tests passed. A focused Settings-controls visual check remains
+   pending: the local UI bridge closed during the latest attempt to inspect Settings.
+   Production automatic installation remains disabled until the quarantine gate passes;
+   isolated tests explicitly enable it only in their temporary app bundles.
 2. **Signed release feed — configured.** Keep `SPARKLE_EDDSA_PRIVATE_KEY` in the
    reviewer-protected `release` environment. Generate and verify the appcast from the
    exact tested candidate; publish and verify release assets, then deploy only
    `appcast.xml` to the workflow-configured Pages site. Confirm the public feed digest
    matches the signed artifact. Before publication, the workflow also downloads the
    exact candidate ZIP on a disposable macOS runner and completes the localhost
-   install-and-relaunch harness with an ephemeral test key. This gate is configured but
-   has not yet run on GitHub. A separate post-deploy smoke downloads the published
+   install-and-relaunch harness with an ephemeral test key. That exact-candidate release
+   gate has not yet run on GitHub. Pull-request CI now separately runs the automatic
+   localhost install-and-relaunch test with an ephemeral key; the PR checks passed. The
+   public appcast currently returns 404 until the first Sparkle-enabled release deploys
+   the signed feed, so pre-release production-feed checks show Sparkle's retrieval error.
+   A separate post-deploy smoke downloads the published
    appcast and release ZIP, installs it on a disposable runner, and validates the new
    version and preserved state. That job is configured but cannot run until the first
    Sparkle-enabled release publishes the feed.
