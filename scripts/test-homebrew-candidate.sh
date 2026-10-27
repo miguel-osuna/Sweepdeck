@@ -150,6 +150,7 @@ git -C "$tap_dir" add Casks/sweepdeck.rb
 git -C "$tap_dir" commit --quiet -m "Add Sweepdeck release candidate cask"
 brew tap "$tap_name" "$tap_dir"
 tap_created=1
+brew trust --cask "$cask_name"
 brew audit --cask --strict "$cask_name"
 brew style --cask "$cask_name"
 
