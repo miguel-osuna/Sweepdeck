@@ -1,5 +1,6 @@
 import Combine
 import AppKit
+import Darwin
 import Foundation
 import Sparkle
 import SweepdeckPresentation
@@ -164,6 +165,9 @@ private final class SweepdeckUpdaterDelegate: NSObject, SPUUpdaterDelegate {
     }
 
     func updater(_ updater: SPUUpdater, didDownloadUpdate item: SUAppcastItem) {
+        if Bundle.main.object(forInfoDictionaryKey: "SweepdeckTestQuarantineBeforeInstall") as? Bool == true {
+            applyTestQuarantineBeforeInstall()
+        }
         guard Bundle.main.object(forInfoDictionaryKey: "SweepdeckTestQuitAfterAutomaticDownload") as? Bool == true else {
             return
         }
@@ -175,6 +179,28 @@ private final class SweepdeckUpdaterDelegate: NSObject, SPUUpdaterDelegate {
                 return
             }
             NSApp.terminate(nil)
+        }
+    }
+
+    private func applyTestQuarantineBeforeInstall() {
+        let timestamp = String(Int(Date().timeIntervalSince1970), radix: 16)
+        let quarantineValue = "0081;\(timestamp);SweepdeckUpdateTest;\(UUID().uuidString)"
+        let result = Bundle.main.bundleURL.path.withCString { path in
+            "com.apple.quarantine".withCString { name in
+                quarantineValue.withCString { value in
+                    setxattr(path, name, value, quarantineValue.utf8.count, 0, 0)
+                }
+            }
+        }
+        guard result == 0,
+              let markerPath = Bundle.main.object(forInfoDictionaryKey: "SweepdeckTestQuarantineMarker") as? String else {
+            NSLog("Could not quarantine the isolated updater test app before installation: %d", errno)
+            return
+        }
+        do {
+            try Data("quarantine-attached\n".utf8).write(to: URL(fileURLWithPath: markerPath), options: .atomic)
+        } catch {
+            NSLog("Could not write the isolated updater quarantine marker: %@", error.localizedDescription)
         }
     }
 

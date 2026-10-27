@@ -121,6 +121,8 @@ jobs:
           unset private_key public_key
       - name: Verify an isolated signed install-on-quit update
         run: bash scripts/test-local-updates.sh automatic
+      - name: Audit Sparkle installation with quarantine on the old test bundle
+        run: bash scripts/test-local-updates.sh quarantined
 
   latest-swift:
     name: Latest stable Swift 6.4.1 on macOS 26

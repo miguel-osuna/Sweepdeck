@@ -24,32 +24,27 @@ build, and disposable Homebrew smoke in [release run 39664467890](https://github
 The protected release job was approved by its required reviewer and completed
 successfully.
 
-The Sparkle updater changes in the current working tree built and passed the complete
-Swift test matrix with Swift 6.2 and Sparkle 2.10.0 on macOS 26.6.2 arm64. Isolated
-automatic 0.3.0-to-0.4.0 updates passed with both the existing production Keychain key
-and a per-test ephemeral key. Sparkle installed on quit; the harness relaunched 0.4.0
-and verified the launch marker, preserved appearance/history/state, signature, and
-unchanged installed `/Applications/Sweepdeck.app`. The locally built 0.4.0 candidate
-path also passed using a fresh ephemeral key. Automatic installation was enabled only
-in temporary test bundles. The updated app's dashboard visibly reports `Version 0.4.0`,
-and the user confirmed that the post-update Settings footer reports `0.4.0`. The manual
-visual before/after preferences and history comparison remains unverified; the automated
-state-file checks passed. Three earlier local attempts fetched the localhost appcast
-without requesting the archive and timed out before installation; the UI bridge closed
-during those attempts. A fresh run under the unique display name
-`Sweepdeck Update Test DZc3Pp` also fetched the appcast but did not begin installation
-before timing out at 0.3.0; the native UI bridge again failed to attach. The process
-lookup now requests full-width `ps` output. The
-historical CI rows above do not cover these updater changes; the updated CI and release
-workflow paths have not yet run on GitHub. GitHub Pages is configured, but the workflow
-has not deployed an appcast, so the new post-deploy smoke against the public feed and
-GitHub Release ZIP is configured but cannot run until the first Sparkle-enabled release.
+The Sparkle updater changes passed the complete Swift test matrix with Swift 6.2 and
+Sparkle 2.10.0 on macOS 26.6.2 arm64. Isolated automatic 0.3.0-to-0.4.0 updates passed
+with both the existing production Keychain key and a per-test ephemeral key. Sparkle
+installed on quit; the harness relaunched 0.4.0 and verified the launch marker, preserved
+appearance/history/state, signature, and unchanged installed `/Applications/Sweepdeck.app`.
+Automatic installation was enabled only in temporary test bundles for the initial
+release-0.4.0 verification. The user confirmed that the updated Settings footer reports
+`0.4.0`. Automated state-file checks passed;
+the manual visual before/after preferences and history comparison remains unverified.
+The focused Settings-controls visual check is also pending because the local UI bridge
+closed during inspection. A fresh local 0.4.0-to-0.5.0 run passed automatic installation
+and user-approved installation while scanning its generated fixture, preserving scan
+results and state while leaving the installed app unchanged. The offline-feed UI showed
+Sparkle's retrieval error; the tampered-feed UI showed its improperly signed archive
+error. Both failures left the test app on 0.4.0.
 
-The release workflow now includes a disposable macOS gate for the exact candidate ZIP:
-it signs a localhost feed with a per-run ephemeral key, verifies Sparkle installs the
-candidate on quit, then launches the updated bundle and checks state preservation
-before the protected publish job. This workflow change has not yet run on GitHub and
-does not test quarantine or Gatekeeper.
+Release run [40037947723](https://github.com/miguel-osuna/Sweepdeck/actions/runs/40037947723)
+passed the exact-candidate update gate, protected publication, GitHub Pages deployment,
+and the post-deploy disposable runner. That runner installed the update from the public
+HTTPS appcast and GitHub Release ZIP, then verified the new version and preserved state.
+The public appcast currently returns HTTP 200 and advertises signed version 0.4.0.
 
 The relaunch-deferral unit tests passed for active scan/preview/Trash states. A live
 localhost deferral run then used only the harness-generated empty-directory fixture. The
@@ -58,22 +53,24 @@ and relaunch while the UI reported an active scan; Sparkle stayed at “Ready to
 until the scan result was saved, then relaunched the test app at 0.4.0. The saved test
 state retained its seeded Dark appearance and history entry, gained the completed scan
 timestamp, and recorded both 0.3.0 and 0.4.0 launches. The updated bundle passed strict
-code-signature verification. No files were selected or moved to Trash. Offline-feed and
-tampered-archive signatures are rejected by the test tooling, but the corresponding
-visible Sparkle UI failure dialogs remain unverified.
+code-signature verification. No files were selected or moved to Trash. A focused
+Settings-controls visual check remains unverified because the local UI bridge closed
+during inspection.
 
-The localhost runs did not simulate a quarantined download or verify Gatekeeper behavior.
-The current release remains ad-hoc signed and unnotarized, so the production bundle now
-sets `SUAllowsAutomaticUpdates=false`. The Settings control is visible but disabled;
-isolated test bundles explicitly override that value to exercise automatic installation.
-Run a quarantined update test on a disposable macOS runner before allowing the control.
-The release workflow run currently visible on GitHub predates these updater changes, and
-the public appcast URL returns HTTP 404 until a Sparkle-enabled release publishes it. The
-Homebrew tap remains at 0.3.0 with no `auto_updates` declaration. The signing key is in
-the protected GitHub release environment and remains in the local Keychain. A local
-plaintext recovery export with owner-only permissions was generated for the user to save
-in their vault; vault storage is not yet confirmed, so an encrypted offline backup remains
-an open release-readiness task. Sparkle recommends
+The published-feed v0.4.0 run did not simulate a quarantined update. A later local
+isolated 0.4.0-to-0.4.1 test attached quarantine to the old test bundle after download;
+Sparkle completed the update and cleared quarantine in its normal installer, then
+relaunched the new app with its test state intact. `spctl` still rejected the ad-hoc
+signature (status 3) after the installer cleared quarantine. No quarantine was manually
+removed and no security setting changed. Disposable-runner quarantine checks are wired
+in CI and the release workflow, but have not run. Published v0.4.0 sets
+`SUAllowsAutomaticUpdates=false` and asks before installation. The unreleased worktree
+sets `SUAutomaticallyUpdate=true` by default while automatic checks remain opt-in;
+users can turn automatic installation off in Settings. Settings also provides a manual
+download fallback. The tap still targets 0.3.0 and has no `auto_updates` declaration.
+The signing key is in the protected GitHub release environment and remains in the local
+Keychain. Maintain an encrypted offline recovery copy outside the repository and
+release environment. Sparkle recommends
 Developer ID signing and notarization where possible
 ([Sparkle security guidance](https://sparkle-project.org/documentation/)). Apple explains
 how notarization tickets inform Gatekeeper on first launch
@@ -174,6 +171,13 @@ uninstall. Its ad-hoc signed app remained quarantined; Gatekeeper rejected unatt
 launch with status 3, Launch Services timed out after 15 seconds (status 124), and no
 app process was observed. The workflow did not simulate user approval or claim a
 successful post-approval launch.
+
+The 0.4.0 candidate check in [release run 40037947723](https://github.com/miguel-osuna/Sweepdeck/actions/runs/40037947723)
+preserved Homebrew's quarantine attribute. `spctl --assess` rejected the ad-hoc signed
+app with status 3. Launch Services timed out after 15 seconds, while the app process was
+observed with its temporary state directory. The runner did not approve the app, remove
+quarantine, or change macOS security settings. This repeats the Gatekeeper finding on
+the updater-enabled release but does not test an in-place update of a quarantined app.
 
 The tap's [PR #3](https://github.com/miguel-osuna/homebrew-tap/pull/3) clarified the
 one-time approval instructions. [Tap PR #4](https://github.com/miguel-osuna/homebrew-tap/pull/4) updated the cask

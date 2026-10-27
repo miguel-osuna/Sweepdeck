@@ -223,6 +223,8 @@ jobs:
           unset private_key public_key
       - name: Verify install-on-quit for the exact candidate through localhost Sparkle feed
         run: bash scripts/test-local-updates.sh automatic
+      - name: Audit the exact candidate with quarantine on the old isolated app
+        run: bash scripts/test-local-updates.sh quarantined
 
   publish:
     needs: [candidate, homebrew_candidate, sparkle_candidate]
@@ -404,6 +406,7 @@ jobs:
       - name: Install from the published HTTPS appcast on a disposable runner
         env:
           SWEEPDECK_DISPOSABLE_RUNNER: ${{ runner.environment == 'github-hosted' }}
+          SWEEPDECK_TEST_QUARANTINE: "true"
           SWEEPDECK_TEST_UPDATE_VERSION: ${{ needs.candidate.outputs.release_version }}
           SWEEPDECK_TEST_FEED_URL: https://miguel-osuna.github.io/Sweepdeck/appcast.xml
         run: bash scripts/test-local-updates.sh published

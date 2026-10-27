@@ -15,9 +15,9 @@ UI confirmation → CleanupExecutor.execute → per-item OperationRecord → JSO
 standard updater and exposes opt-in update checks. A check may run during a scan; the
 updater prevents new cleanup work while it downloads. Sparkle verifies the EdDSA-signed
 feed and archive before extraction. Its relaunch hook waits for a scan, preview, Trash
-operation, or folder panel to finish. Automatic installation is available as an opt-in
-setting and starts off; users are advised to keep it off until a quarantined candidate
-passes Gatekeeper testing. Scanner/executor actors perform
+operation, or folder panel to finish. Automatic installation is on by default after a
+user opts into automatic checks and can be disabled in Settings. The ad-hoc signed
+release may be blocked by Gatekeeper after an update. Scanner/executor actors perform
 filesystem work away from the main actor. Progress crosses through sendable values.
 One cleanup operation is active at a time. Settings changes invalidate results. Root
 and policy snapshots are immutable during operations; the UI disables relevant edits.

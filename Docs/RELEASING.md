@@ -33,14 +33,14 @@ repository's root commit, then requires semantic-release to propose exactly `0.1
 Later versions follow Conventional Commit rules. Release tooling is not published as
 an npm package.
 
-The source `Info.plist` carries the latest published version (`0.3.0`) for ordinary
+The source `Info.plist` carries the latest published version (`0.4.0`) for ordinary
 local builds. The release workflow stamps the proposed version into its staged bundle;
 update the source version and the default-version check in `scripts/test-app-version.sh`
 when a release is published so local builds continue to identify the installed release.
 
 ## Sparkle updates
 
-Starting with the first Sparkle-enabled release, the app checks the stable URL
+Since version 0.4.0, the app checks the stable URL
 `https://miguel-osuna.github.io/Sweepdeck/appcast.xml`. GitHub Pages is configured for
 workflow deployments. After the exact candidate ZIP passes the release checks and a
 reviewer approves the protected `release` environment, the workflow signs the appcast,
@@ -59,34 +59,42 @@ same time. A key loss prevents signed in-app updates; users would need to instal
 recovery build manually.
 
 Automatic checks and installation have separate Settings controls. Automatic checks
-start off. The production bundle currently disallows automatic installation, so its
-control is visible but disabled until a quarantined candidate update passes on a
-disposable macOS runner. After validation, the control can be allowed and will start
-off. Until then, the app asks users to install detected updates and defers relaunch until
-scanning, preview, Trash work, and folder panels have finished. Update checks never send
-Sparkle's system profile. The
-first Sparkle-enabled version cannot update installations of 0.3.0
-because those already-installed apps do not contain an updater; existing users must
-install that first Sparkle-enabled version manually. Do not set `auto_updates true` on
-the Homebrew cask until the quarantined update path passes.
+start off. The unreleased worktree sets automatic installation on once checks are
+enabled; users can turn it off in Settings. Published v0.4.0 still asks before
+installation. The ad-hoc signed release may be blocked by Gatekeeper after an update;
+Settings provides a manual download fallback. The quarantined in-place update passed a
+local isolated simulation: Sparkle cleared quarantine during its normal install and
+launched the updated test app. Disposable-runner checks for the exact candidate and
+published HTTPS feed are wired but pending. The app defers relaunch until scanning,
+preview, Trash work, and folder panels have finished. Update checks never send Sparkle's
+system profile. Version 0.4.0 cannot update installations of 0.3.0 or earlier because those
+already-installed apps do not contain an updater; existing users must install 0.4.0
+manually once. Do not set `auto_updates true` on the Homebrew cask until the disposable
+macOS quarantine checks pass.
+
+Sparkle's EdDSA signatures authenticate the update feed and archive. They do not replace
+Apple code signing or notarization and do not change Gatekeeper's assessment of the app.
 
 Before the protected publish job, the release workflow runs the localhost automatic
 update harness against the exact candidate ZIP on a disposable macOS runner. That job
 creates a per-run EdDSA key and never accesses the production key. It verifies signed
 feed/archive handling and Sparkle's install-on-quit path, then launches the updated
 temporary app to check its version and preserved state. It does not test a quarantined
-download or establish Gatekeeper compatibility.
+download or establish Gatekeeper compatibility. A separate `quarantined` mode attaches
+quarantine to the isolated old app after the signed archive downloads, then records the
+normal Sparkle install and Gatekeeper result without clearing quarantine itself or
+changing system settings.
 
-Pull-request CI also runs the isolated localhost install-on-quit path on a disposable
-Apple Silicon macOS runner using a per-run EdDSA key. This catches updater regressions
-before merge; it does not replace the release workflow's check of the exact versioned
-candidate or the separate quarantine and Gatekeeper validation.
+Pull-request CI also runs the isolated localhost install-on-quit and quarantine paths on
+a disposable Apple Silicon macOS runner using a per-run EdDSA key. This catches updater
+regressions before merge; it does not replace the release workflow's check of the exact
+versioned candidate and published HTTPS feed.
 
 After deploying the appcast, a second disposable macOS job tests the actual public HTTPS
 feed and GitHub Release ZIP. It installs the published update over an isolated older app,
 then checks the new version, code signature, and preserved preferences/history. This
-post-deploy check uses only the embedded public key; it needs no release secret. It is
-configured but will not run until a Sparkle-enabled release has published the feed.
+post-deploy check uses only the embedded public key; it needs no release secret. The
+check passed for 0.4.0 in [release run 40037947723](https://github.com/miguel-osuna/Sweepdeck/actions/runs/40037947723).
 
 To test locally, run `bash scripts/test-local-updates.sh [manual|automatic|deferral|offline|tampered]`.
 The default `manual` mode builds two versioned app bundles, gives the isolated test
@@ -114,13 +122,15 @@ To use a built candidate bundle as the update payload, set
 installs into a separately configured temporary app with an isolated bundle ID and
 state directory.
 
-This localhost test uses ad-hoc-signed temporary bundles and does not simulate a
-quarantined download or verify Gatekeeper behavior. The current release is also ad-hoc
-signed and unnotarized. Before enabling automatic installation or adding `auto_updates
-true` to the cask, run the full update flow from a quarantined candidate on a disposable
-supported macOS runner. The runner must verify Gatekeeper acceptance, update signature
-rejection, user-approved installation, preserved app state, and deferred relaunch during
-an explicitly authorized temporary-folder scan. Sparkle recommends Developer ID signing
+This localhost test uses ad-hoc-signed temporary bundles; its quarantine mode attaches
+quarantine to the old isolated bundle after download and lets Sparkle's normal installer
+handle it. The current release is also ad-hoc signed and unnotarized. Before publishing
+the automatic-install default or adding `auto_updates true` to the cask, require this
+flow to pass on a disposable supported macOS runner with both the exact candidate and
+the published HTTPS feed. A Gatekeeper-blocked relaunch fails the gate. Record
+Gatekeeper's result, update signature rejection, user-approved installation, preserved
+app state, and deferred relaunch during an
+explicitly authorized temporary-folder scan. Sparkle recommends Developer ID signing
 and notarization where possible ([Sparkle security guidance](https://sparkle-project.org/documentation/)). Apple explains how notarization tickets inform Gatekeeper on first launch ([Apple notarization guidance](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution)).
 
 ## Published release

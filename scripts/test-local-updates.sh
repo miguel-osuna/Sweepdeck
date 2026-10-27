@@ -9,17 +9,27 @@ fi
 
 test_mode="${1:-manual}"
 case "$test_mode" in
-  manual|automatic|deferral|offline|tampered|published) ;;
+  manual|automatic|deferral|offline|tampered|published|quarantined) ;;
   *)
-    echo "Usage: $0 [manual|automatic|deferral|offline|tampered|published]" >&2
+    echo "Usage: $0 [manual|automatic|deferral|offline|tampered|published|quarantined]" >&2
     exit 64
     ;;
 esac
+quarantine_audit=false
+if [[ "$test_mode" == quarantined || "${SWEEPDECK_TEST_QUARANTINE:-false}" == true ]]; then
+  quarantine_audit=true
+fi
 
 key_account="${SPARKLE_KEYCHAIN_ACCOUNT:-sweepdeck}"
 default_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
 old_version="${SWEEPDECK_TEST_OLD_VERSION:-$default_version}"
-update_version="${SWEEPDECK_TEST_UPDATE_VERSION:-0.4.0}"
+if [[ -n "${SWEEPDECK_TEST_UPDATE_VERSION:-}" ]]; then
+  update_version="$SWEEPDECK_TEST_UPDATE_VERSION"
+elif [[ "$test_mode" == published ]]; then
+  update_version=""
+else
+  update_version="$(bash scripts/next-test-update-version.sh "$old_version")"
+fi
 candidate_update_app="${SWEEPDECK_TEST_UPDATE_APP:-}"
 if [[ "$test_mode" == published ]]; then
   if [[ -z "${SWEEPDECK_TEST_UPDATE_VERSION:-}" ]]; then
@@ -61,6 +71,7 @@ updates_dir="$workspace/updates"
 state_dir="$workspace/isolated-state"
 app_state_dir="$state_dir"
 launch_marker="$state_dir/launches.log"
+quarantine_marker="$workspace/quarantine-attached.txt"
 scan_fixture="$workspace/authorized-scan-fixture"
 port="$(python3 - <<'PY'
 import socket
@@ -200,7 +211,7 @@ fi
 
 configure_test_app() {
   local app="$1"
-  python3 - "$app/Contents/Info.plist" "$feed_url" "$app_state_dir" "$bundle_id" "$test_mode" "${SPARKLE_EDDSA_PUBLIC_KEY:-}" "$launch_marker" "$bundle_suffix" <<'PY'
+  python3 - "$app/Contents/Info.plist" "$feed_url" "$app_state_dir" "$bundle_id" "$test_mode" "${SPARKLE_EDDSA_PUBLIC_KEY:-}" "$launch_marker" "$bundle_suffix" "$quarantine_marker" "$quarantine_audit" <<'PY'
 import plistlib
 import sys
 from pathlib import Path
@@ -219,7 +230,7 @@ if sys.argv[5] != "published":
 if sys.argv[6]:
     info["SUPublicEDKey"] = sys.argv[6]
 info["SweepdeckTestLaunchMarker"] = sys.argv[7]
-automatic = sys.argv[5] in {"automatic", "published"}
+automatic = sys.argv[5] in {"automatic", "published", "quarantined"}
 info["SUEnableAutomaticChecks"] = automatic
 info["SUAutomaticallyUpdate"] = automatic
 info["SUAllowsAutomaticUpdates"] = True
@@ -227,6 +238,12 @@ info["SUEnableSystemProfiling"] = False
 info["SUVerifyUpdateBeforeExtraction"] = True
 info["SURequireSignedFeed"] = True
 info["SUSignedFeedFailureExpirationInterval"] = 0
+if sys.argv[10] == "true":
+    info["SweepdeckTestQuarantineBeforeInstall"] = True
+    info["SweepdeckTestQuarantineMarker"] = sys.argv[9]
+else:
+    info.pop("SweepdeckTestQuarantineBeforeInstall", None)
+    info.pop("SweepdeckTestQuarantineMarker", None)
 if automatic:
     info["SweepdeckTestQuitAfterAutomaticDownload"] = True
 else:
@@ -438,6 +455,13 @@ case "$test_mode" in
   published)
     echo "This isolated app uses the public HTTPS appcast and actual GitHub Release ZIP."
     echo "Automatic checks and installation are enabled only in this test bundle."
+    if [[ "$quarantine_audit" == true ]]; then
+      echo "The old isolated bundle will receive quarantine after the signed update downloads."
+    fi
+    ;;
+  quarantined)
+    echo "The isolated app adds quarantine to its temporary old bundle after the signed update downloads."
+    echo "Sparkle then runs its normal installer and Gatekeeper scan; the harness never clears quarantine or changes security settings."
     ;;
 esac
 echo "Temporary app: $old_app"
@@ -470,11 +494,20 @@ updated=false
 current_pid=""
 updated_launch_pid=""
 automatic_test_launch_requested=false
+quarantined_relaunch_blocked=false
 for _ in {1..300}; do
   current_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$old_app/Contents/Info.plist" 2>/dev/null || true)"
   current_pids="$(test_app_pids)"
   current_pid="$(printf '%s\n' "$current_pids" | awk 'NF && NR == 1 { first = $1 } END { print first }')"
-  if { [[ "$test_mode" == automatic ]] || [[ "$test_mode" == published ]]; } && \
+  if [[ "$quarantine_audit" == true && "$current_version" == "$update_version" && -z "$current_pid" && "$automatic_test_launch_requested" != true ]]; then
+    if xattr -p com.apple.quarantine "$old_app" >/dev/null 2>&1; then
+      quarantined_relaunch_blocked=true
+      echo "The updated bundle still has quarantine; not attempting a launch that could trigger a Gatekeeper prompt."
+      break
+    fi
+    open -n "$old_app"
+    automatic_test_launch_requested=true
+  elif { [[ "$test_mode" == automatic ]] || [[ "$test_mode" == published ]]; } && \
     [[ "$current_version" == "$update_version" && -z "$current_pid" && "$automatic_test_launch_requested" != true ]]; then
     open -n "$old_app"
     automatic_test_launch_requested=true
@@ -508,6 +541,21 @@ if [[ "$updated" != true ]]; then
   if [[ -f "$workspace/http.log" ]]; then
     echo "Loopback feed requests:"
     cat "$workspace/http.log"
+  fi
+  if [[ "$quarantine_audit" == true && "$current_version" == "$update_version" && -z "$current_pids" && -s "$quarantine_marker" ]] && \
+    { [[ "$quarantined_relaunch_blocked" == true ]] || xattr -p com.apple.quarantine "$old_app" >/dev/null 2>&1; }; then
+    set +e
+    spctl --assess --type execute --verbose=4 "$old_app" >"$workspace/quarantine-gatekeeper.txt" 2>&1
+    gatekeeper_status=$?
+    set -e
+    cat "$workspace/quarantine-gatekeeper.txt"
+    if [[ "$gatekeeper_status" -eq 3 ]]; then
+      codesign --verify --deep --strict "$old_app"
+      [[ "$(<"$state_dir/keep.txt")" == "isolated update test state" ]]
+      echo "FAIL: Sparkle installed the signed update, but Gatekeeper blocked its relaunch. Keep the manual download fallback; do not bypass Gatekeeper." >&2
+      wait_for_local_test_app_to_close
+      exit 1
+    fi
   fi
   echo "Recent app log:"
   log show --last 10m --style compact --predicate 'process == "Sweepdeck"' 2>/dev/null | tail -n 80 || true
@@ -560,12 +608,32 @@ if [[ -n "$swiftui_update_warnings" ]]; then
   exit 1
 fi
 
-if [[ "$test_mode" == automatic || "$test_mode" == published ]]; then
+if [[ "$test_mode" == automatic || "$test_mode" == published || "$test_mode" == quarantined ]]; then
   echo "PASS: Sparkle installed version $update_version on quit; the updated isolated app launched and passed validation."
 else
   echo "PASS: Sparkle updated and relaunched the isolated app at version $update_version."
 fi
-if [[ "$test_mode" == deferral ]]; then
+if [[ "$quarantine_audit" == true ]]; then
+  [[ -s "$quarantine_marker" ]] || {
+    echo "Sparkle did not reach the test quarantine step before installation." >&2
+    exit 1
+  }
+  echo "PASS: the running old test bundle received quarantine before Sparkle installation."
+  set +e
+  spctl --assess --type execute --verbose=4 "$old_app" >"$workspace/quarantine-gatekeeper.txt" 2>&1
+  gatekeeper_status=$?
+  set -e
+  cat "$workspace/quarantine-gatekeeper.txt"
+  if [[ "$gatekeeper_status" -eq 0 ]]; then
+    echo "Gatekeeper accepted the updated isolated bundle."
+  elif [[ "$gatekeeper_status" -eq 3 ]]; then
+    echo "spctl rejected the ad-hoc signature, although Sparkle cleared quarantine and the updated isolated app relaunched successfully."
+  else
+    echo "Unexpected Gatekeeper assessment status: $gatekeeper_status" >&2
+    exit 1
+  fi
+  xattr -p com.apple.quarantine "$old_app" 2>/dev/null || echo "Sparkle removed quarantine as part of its normal installer flow."
+elif [[ "$test_mode" == deferral ]]; then
   echo "PASS: the scan result, seeded appearance/history, state marker, and installed app were preserved."
 else
   echo "PASS: isolated appearance, history, state marker, and installed app were unchanged."
