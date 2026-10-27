@@ -1,0 +1,19 @@
+name: PR description
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+permissions:
+  contents: read
+jobs:
+  description:
+    name: Require written PR description
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Check for author-provided description text
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 scripts/check-pr-description.py
