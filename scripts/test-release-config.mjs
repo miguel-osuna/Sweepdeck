@@ -43,8 +43,11 @@ assert.match(releaseWorkflow, /node scripts\/verify-sparkle-key\.mjs/);
 assert.match(releaseWorkflow, /--full-release-notes-url/);
 assert.match(releaseWorkflow, /fullReleaseNotesLink/);
 assert.match(releaseWorkflow, /sparkle_candidate:[\s\S]*?bash scripts\/test-local-updates\.sh automatic/);
+assert.match(releaseWorkflow, /sparkle_candidate:[\s\S]*?bash scripts\/test-local-updates\.sh quarantined/);
 assert.match(releaseWorkflow, /published_sparkle_smoke:[\s\S]*?needs: \[candidate, deploy_appcast\][\s\S]*?SWEEPDECK_TEST_FEED_URL: https:\/\/miguel-osuna\.github\.io\/Sweepdeck\/appcast\.xml[\s\S]*?bash scripts\/test-local-updates\.sh published/);
+assert.match(releaseWorkflow, /published_sparkle_smoke:[\s\S]*?SWEEPDECK_TEST_QUARANTINE: "true"/);
 assert.match(updateHarness, /GITHUB_ACTIONS.*SWEEPDECK_DISPOSABLE_RUNNER/);
+assert.match(updateHarness, /quarantined/);
 assert.match(updateHarness, /RUNNER_TEMP/);
 assert.match(updateHarness, /Refusing the published-feed test because \/Applications\/Sweepdeck\.app exists/);
 assert.match(updateHarness, /Application Support directory already exists/);
@@ -54,6 +57,7 @@ assert.match(updateHarness, /Quit the isolated test app when you are done[\s\S]*
 assert.match(releaseWorkflow, /publish:\n\s+needs: \[candidate, homebrew_candidate, sparkle_candidate\]/);
 assert.match(releaseWorkflow, /openssl rand -base64 32/);
 assert.match(buildWorkflow, /sparkle_local_update:[\s\S]*?runs-on: macos-15[\s\S]*?scripts\/prepare-sparkle\.sh[\s\S]*?bash scripts\/test-local-updates\.sh automatic/);
+assert.match(buildWorkflow, /sparkle_local_update:[\s\S]*?bash scripts\/test-local-updates\.sh automatic[\s\S]*?bash scripts\/test-local-updates\.sh quarantined/);
 assert.match(buildWorkflow, /Create an ephemeral localhost test signing key/);
 
 await import("semantic-release");

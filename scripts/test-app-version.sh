@@ -6,8 +6,8 @@ trap 'rm -rf "$fixture_dir"' EXIT
 
 default_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
 default_build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Resources/Info.plist)"
-if [[ "$default_version" != "0.3.0" || "$default_build" != "0.3.0" ]]; then
-  echo "Expected the local app metadata to match the latest release 0.3.0; received $default_version (build $default_build)." >&2
+if [[ "$default_version" != "0.4.0" || "$default_build" != "0.4.0" ]]; then
+  echo "Expected the local app metadata to match the latest release 0.4.0; received $default_version (build $default_build)." >&2
   exit 1
 fi
 

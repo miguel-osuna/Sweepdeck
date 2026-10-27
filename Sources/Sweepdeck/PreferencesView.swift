@@ -85,10 +85,8 @@ struct PreferencesView: View {
                             set: { updates.setAutomaticDownloadsEnabled($0) }
                         ))
                         .disabled(!updates.allowsAutomaticUpdates || !updates.automaticallyChecksForUpdates || model.isBusy)
-                        if !updates.allowsAutomaticUpdates {
-                            Text("Automatic installation is unavailable in this build until the quarantined update path passes Gatekeeper validation. Sweepdeck will ask before installing updates.")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
+                        Text("Automatic installation is on by default once you enable automatic checks. Turn this off to review each update before installing. This ad-hoc signed build may be blocked by Gatekeeper after an update. Use Download manually if Sweepdeck does not reopen.")
+                            .font(.caption).foregroundStyle(.secondary)
                         Text("Update checks contact Sweepdeck's signed release feed. No system profile is sent. Automatic checks are opt-in. Sweepdeck waits for active work to finish before relaunching after an update.")
                             .font(.caption).foregroundStyle(.secondary)
                         HStack {

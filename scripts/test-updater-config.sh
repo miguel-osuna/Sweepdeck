@@ -14,8 +14,8 @@ with Path(sys.argv[1]).open("rb") as stream:
 expected = {
     "SUFeedURL": "https://miguel-osuna.github.io/Sweepdeck/appcast.xml",
     "SUPublicEDKey": "0Qm9EttnzanTlTUzHHkr9P30npDDAIVCvS1jOTnOswM=",
-    "SUAutomaticallyUpdate": False,
-    "SUAllowsAutomaticUpdates": False,
+    "SUAutomaticallyUpdate": True,
+    "SUAllowsAutomaticUpdates": True,
     "SUEnableSystemProfiling": False,
     "SUVerifyUpdateBeforeExtraction": True,
     "SURequireSignedFeed": True,
@@ -37,5 +37,5 @@ except (KeyError, ValueError) as error:
 if len(public_key) != 32:
     raise SystemExit(f"SUPublicEDKey must decode to 32 bytes, got {len(public_key)}")
 
-print("Sparkle feed, signing, privacy, and opt-in defaults passed.")
+print("Sparkle feed, signing, privacy, automatic installation, and opt-in check defaults passed.")
 PY
